@@ -490,11 +490,11 @@
       initLiff();
     });
 
-    // 0g〜120g（10g刻み）のプルダウンを生成
+    // 0g（未入力）〜140g（10g刻み）のプルダウンを生成
     function buildFoodSelects() {
       const selects = ['kyoikuFood', 'deckFood'];
       let optionsHtml = '<option value="0">0g（未入力）</option>';
-      for (let i = 10; i <= 120; i += 10) {
+      for (let i = 10; i <= 140; i += 10) {
         optionsHtml += `<option value="${i}">${i}g</option>`;
       }
       selects.forEach(id => {
