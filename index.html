@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🐾 餌やり報告・履歴</title>
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    :root {
+      --primary: #0288D1;
+      --line-green: #00B900;
+      --bg: #f4f6f8;
+      --card-bg: #ffffff;
+      --text: #333333;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 16px;
+      background-color: var(--bg);
+      color: var(--text);
+      box-sizing: border-box;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .reporter-box {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #e8f5e9;
+      border: 1px solid #c8e6c9;
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+    }
+
+    .reporter-label {
+      font-size: 0.9rem;
+      font-weight: bold;
+      color: #2e7d32;
+    }
+
+    .reporter-name {
+      font-size: 1.05rem;
+      font-weight: bold;
+      color: #1b5e20;
+    }
+
+    h2 {
+      font-size: 1.05rem;
+      margin: 0 0 12px 0;
+      color: #111;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border-bottom: 2px solid var(--line-green);
+      padding-bottom: 6px;
+    }
+
+    .section-divider {
+      margin: 32px 0 16px 0;
+      text-align: center;
+      position: relative;
+    }
+
+    .section-divider::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      border-top: 1px dashed #bbb;
+      z-index: 1;
+    }
+
+    .section-divider span {
+      background: var(--bg);
+      padding: 0 12px;
+      position: relative;
+      z-index: 2;
+      font-size: 0.9rem;
+      font-weight: bold;
+      color: #666;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label.field-label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: #555;
+      margin-bottom: 6px;
+    }
+
+    .input-number,
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      background: #fafafa;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 70px;
+    }
+
+    .file-input-wrapper {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .file-btn {
+      display: inline-block;
+      text-align: center;
+      background: #eef2f5;
+      border: 1px dashed #90a4ae;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #37474f;
+      cursor: pointer;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .preview-img {
+      max-width: 100%;
+      max-height: 160px;
+      object-fit: cover;
+      border-radius: 6px;
+      display: none;
+      margin-top: 6px;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-num {
+      flex: 1;
+      padding: 10px 0;
+      border: 1px solid #ddd;
+      background: #fff;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: bold;
+      color: #555;
+      cursor: pointer;
+    }
+
+    .btn-num.active {
+      background: var(--line-green);
+      color: #fff;
+      border-color: var(--line-green);
+    }
+
+    .cat-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .cat-item:last-child {
+      border-bottom: none;
+    }
+
+    .cat-name {
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 26px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .25s;
+      border-radius: 26px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .25s;
+      border-radius: 50%;
+    }
+
+    input:checked+.slider {
+      background-color: var(--line-green);
+    }
+
+    input:checked+.slider:before {
+      transform: translateX(22px);
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 14px;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1.05rem;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(2, 136, 209, 0.3);
+      margin-top: 8px;
+      margin-bottom: 12px;
+    }
+
+    .submit-btn:disabled {
+      background-color: #aaa;
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 30px 16px;
+      color: #666;
+      font-size: 0.9rem;
+    }
+
+    .log-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .log-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+    }
+
+    .log-date {
+      font-weight: bold;
+      font-size: 0.95rem;
+      color: #111;
+    }
+
+    .log-user {
+      font-size: 0.8rem;
+      background: #e8f5e9;
+      color: #2e7d32;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-weight: 500;
+    }
+
+    .photo-grid {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .photo-box {
+      flex: 1;
+      text-align: center;
+    }
+
+    .photo-label {
+      font-size: 0.75rem;
+      color: #666;
+      margin-bottom: 4px;
+      font-weight: bold;
+    }
+
+    .photo-img {
+      width: 100%;
+      height: 110px;
+      object-fit: cover;
+      border-radius: 8px;
+      background-color: #eee;
+      cursor: pointer;
+    }
+
+    .cats-badge-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .cat-badge {
+      font-size: 0.75rem;
+      background: #fff3e0;
+      color: #e65100;
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid #ffe082;
+    }
+
+    .detail-row {
+      font-size: 0.85rem;
+      color: #555;
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+
+    .note-box {
+      margin-top: 8px;
+      padding: 8px 10px;
+      background: #fdfefe;
+      border-left: 3px solid var(--primary);
+      font-size: 0.85rem;
+      color: #444;
+      white-space: pre-wrap;
+      border-radius: 0 6px 6px 0;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 9999;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.85);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal img {
+      max-width: 90%;
+      max-height: 85%;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- 報告者表示枠 -->
+  <div class="reporter-box">
+    <span class="reporter-label">👤 報告者（LINE名）</span>
+    <span id="userNameDisplay" class="reporter-name">取得中...</span>
+  </div>
+
+  <!-- 教育エリア -->
+  <div class="card">
+    <h2>🏫 教育エリア</h2>
+    <div class="form-group">
+      <label class="field-label">📷 教育の写真</label>
+      <div class="file-input-wrapper">
+        <label class="file-btn" for="kyoikuPhotoInput">📷 写真を選択 / 撮影</label>
+        <input type="file" id="kyoikuPhotoInput" accept="image/*" onchange="handleImage(this, 'previewKyoiku')">
+        <img id="previewKyoiku" class="preview-img" alt="教育の写真プレビュー">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="field-label" for="kyoikuFood">🍚 エサの量（g・個数など）</label>
+      <input type="number" id="kyoikuFood" class="input-number" placeholder="例: 100">
+    </div>
+    <div class="form-group">
+      <label class="field-label">🐱 教育の子猫（匹数）</label>
+      <div class="btn-group" id="kittenGroup">
+        <button type="button" class="btn-num active" onclick="selectKitten(0)">0匹</button>
+        <button type="button" class="btn-num" onclick="selectKitten(1)">1匹</button>
+        <button type="button" class="btn-num" onclick="selectKitten(2)">2匹</button>
+        <button type="button" class="btn-num" onclick="selectKitten(3)">3匹</button>
+        <button type="button" class="btn-num" onclick="selectKitten(4)">4匹</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="field-label">🐈 成猫の確認</label>
+      <div class="cat-item">
+        <span class="cat-name">教育の親猫</span>
+        <label class="switch">
+          <input type="checkbox" id="cat_教育の親猫">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- デッキエリア -->
+  <div class="card">
+    <h2>🏡 デッキエリア</h2>
+    <div class="form-group">
+      <label class="field-label">📷 デッキの写真</label>
+      <div class="file-input-wrapper">
+        <label class="file-btn" for="deckPhotoInput">📷 写真を選択 / 撮影</label>
+        <input type="file" id="deckPhotoInput" accept="image/*" onchange="handleImage(this, 'previewDeck')">
+        <img id="previewDeck" class="preview-img" alt="デッキの写真プレビュー">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="field-label" for="deckFood">🍚 エサの量（g・個数など）</label>
+      <input type="number" id="deckFood" class="input-number" placeholder="例: 150">
+    </div>
+    <div class="form-group">
+      <label class="field-label">🐈 確認できた猫</label>
+      <div id="deckCatsList"></div>
+    </div>
+  </div>
+
+  <!-- 備考 -->
+  <div class="card">
+    <h2>📝 備考</h2>
+    <div class="form-group">
+      <textarea id="noteTextInput" placeholder="特記事項（体調不良、怪我、残餌など）があれば自由に入力してください"></textarea>
+    </div>
+  </div>
+
+  <button class="submit-btn" id="submitBtn" onclick="submitData()">📝 この内容でNotionに登録</button>
+
+  <!-- 履歴一覧 -->
+  <div class="section-divider">
+    <span>📋 直近の活動記録・写真一覧</span>
+  </div>
+
+  <div id="loading" class="loading">⏳ 履歴データを取得中...</div>
+  <div id="logContainer"></div>
+
+  <!-- 画像拡大モーダル -->
+  <div id="imageModal" class="modal" onclick="closeModal()">
+    <img id="modalImg" src="" alt="拡大写真">
+  </div>
+
+  <script>
+    // 指定いただいたGAS Web App URL
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwweCqCzya_TnE-gYdyW5AqqGQayB1nCJfTqvfuQ06FV3shEMbvnRMVlj_0RV_lkrY58Q/exec";
+    const LIFF_ID = "2011245589-M2Y0zVZY";
+
+    const DECK_CATS = ['黒蜜', 'はいちゃん', 'ちびとら', 'チーズケーキ', 'でかとら'];
+    let selectedKitten = 0;
+    let kyoikuBase64 = null;
+    let deckBase64 = null;
+    let currentUserName = '担当者';
+
+    window.addEventListener('DOMContentLoaded', () => {
+      buildDeckCats();
+      loadHistory();
+      initLiff();
+    });
+
+    async function initLiff() {
+      const displayEl = document.getElementById('userNameDisplay');
+      try {
+        await liff.init({ liffId: LIFF_ID });
+
+        if (!liff.isLoggedIn()) {
+          liff.login();
+          return;
+        }
+
+        const profile = await liff.getProfile();
+        if (profile && profile.displayName) {
+          currentUserName = profile.displayName;
+          displayEl.innerText = currentUserName;
+        }
+      } catch (err) {
+        console.error('LIFF Error:', err);
+        displayEl.innerText = '担当者';
+      }
+    }
+
+    function buildDeckCats() {
+      const container = document.getElementById('deckCatsList');
+      container.innerHTML = DECK_CATS.map(cat => `
+        <div class="cat-item">
+          <span class="cat-name">${cat}</span>
+          <label class="switch">
+            <input type="checkbox" id="cat_${cat}">
+            <span class="slider"></span>
+          </label>
+        </div>
+      `).join('');
+    }
+
+    async function loadHistory() {
+      const loading = document.getElementById('loading');
+      loading.style.display = 'block';
+      loading.innerHTML = '⏳ 履歴データを取得中...';
+
+      try {
+        const res = await fetch(GAS_API_URL);
+        const data = await res.json();
+        if (data.success) {
+          renderLogs(data.logs);
+        } else {
+          loading.innerHTML = '❌ 履歴読み込み失敗: ' + (data.error || '不明なエラー');
+        }
+      } catch (err) {
+        loading.innerHTML = '❌ 通信エラー: ' + err.message;
+      }
+    }
+
+    function renderLogs(logs) {
+      const container = document.getElementById('logContainer');
+      const loading = document.getElementById('loading');
+      loading.style.display = 'none';
+      container.innerHTML = '';
+
+      if (!logs || logs.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;">履歴がまだありません</div>';
+        return;
+      }
+
+      container.innerHTML = logs.map(log => {
+        let catBadges = (log.cats || []).map(c => `<span class="cat-badge">🐱 ${c}</span>`).join('');
+        if (log.kittenCount > 0) {
+          catBadges += `<span class="cat-badge" style="background:#e3f2fd; color:#1565c0; border-color:#bbdefb;">🐾 子猫: ${log.kittenCount}匹</span>`;
+        }
+
+        let photoHtml = '';
+        if (log.kyoikuPhoto || log.deckPhoto) {
+          photoHtml = '<div class="photo-grid">';
+          if (log.kyoikuPhoto) {
+            photoHtml += `
+              <div class="photo-box">
+                <div class="photo-label">🏫 教育エリア</div>
+                <img class="photo-img" src="${log.kyoikuPhoto}" onclick="openModal('${log.kyoikuPhoto}')" alt="教育の写真">
+              </div>`;
+          }
+          if (log.deckPhoto) {
+            photoHtml += `
+              <div class="photo-box">
+                <div class="photo-label">🏡 デッキエリア</div>
+                <img class="photo-img" src="${log.deckPhoto}" onclick="openModal('${log.deckPhoto}')" alt="デッキの写真">
+              </div>`;
+          }
+          photoHtml += '</div>';
+        }
+
+        const noteHtml = log.note ? `<div class="note-box">💬 <strong>備考:</strong> ${log.note}</div>` : '';
+
+        return `
+          <div class="log-card">
+            <div class="log-header">
+              <span class="log-date">${log.date}</span>
+              <span class="log-user">👤 ${log.user}</span>
+            </div>
+            ${photoHtml}
+            <div class="cats-badge-container">
+              ${catBadges || '<span style="font-size:0.75rem; color:#999;">確認猫なし</span>'}
+            </div>
+            <div class="detail-row">🍚 <strong>エサ量:</strong> 教育 ${log.kyoikuFood}g / デッキ ${log.deckFood}g</div>
+            ${noteHtml}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openModal(src) {
+      document.getElementById('modalImg').src = src;
+      document.getElementById('imageModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('imageModal').style.display = 'none';
+    }
+
+    function selectKitten(num) {
+      selectedKitten = num;
+      document.querySelectorAll('.btn-num').forEach((btn, idx) => {
+        btn.classList.toggle('active', idx === num);
+      });
+    }
+
+    function handleImage(input, previewId) {
+      const file = input.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const maxDim = 1000;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height && width > maxDim) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else if (height > maxDim) {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const compressed = canvas.toDataURL('image/jpeg', 0.7);
+          const preview = document.getElementById(previewId);
+          preview.src = compressed;
+          preview.style.display = 'block';
+
+          if (previewId === 'previewKyoiku') {
+            kyoikuBase64 = compressed;
+          } else {
+            deckBase64 = compressed;
+          }
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function submitData() {
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+      submitBtn.innerText = '登録中...（送信中）';
+
+      const checkedCats = ['教育の親猫', ...DECK_CATS];
+      const checkedState = {};
+      checkedCats.forEach(cat => {
+        const el = document.getElementById(`cat_${cat}`);
+        checkedState[cat] = el ? el.checked : false;
+      });
+
+      const payload = {
+        userName: currentUserName,
+        formData: {
+          kyoikuPhoto: kyoikuBase64,
+          deckPhoto: deckBase64,
+          kyoikuFoodAmount: document.getElementById('kyoikuFood').value,
+          deckFoodAmount: document.getElementById('deckFood').value,
+          kittenCount: selectedKitten,
+          checked: checkedState,
+          noteText: document.getElementById('noteTextInput').value
+        }
+      };
+
+      try {
+        const res = await fetch(GAS_API_URL, {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          alert('🐾 Notionに保存しました！');
+          if (liff.isInClient()) {
+            liff.closeWindow();
+          } else {
+            resetForm();
+            loadHistory();
+            submitBtn.disabled = false;
+            submitBtn.innerText = '📝 この内容でNotionに登録';
+          }
+        } else {
+          alert('❌ 保存失敗:\n' + data.error);
+          submitBtn.disabled = false;
+          submitBtn.innerText = '📝 この内容でNotionに登録';
+        }
+      } catch (err) {
+        alert('❌ 通信エラー: ' + err.message);
+        submitBtn.disabled = false;
+        submitBtn.innerText = '📝 この内容でNotionに登録';
+      }
+    }
+
+    function resetForm() {
+      document.getElementById('kyoikuFood').value = '';
+      document.getElementById('deckFood').value = '';
+      document.getElementById('noteTextInput').value = '';
+      document.getElementById('previewKyoiku').style.display = 'none';
+      document.getElementById('previewDeck').style.display = 'none';
+      document.getElementById('kyoikuPhotoInput').value = '';
+      document.getElementById('deckPhotoInput').value = '';
+      kyoikuBase64 = null;
+      deckBase64 = null;
+      selectKitten(0);
+      ['教育の親猫', ...DECK_CATS].forEach(cat => {
+        const el = document.getElementById(`cat_${cat}`);
+        if (el) el.checked = false;
+      });
+    }
+  </script>
+</body>
+
+</html>
