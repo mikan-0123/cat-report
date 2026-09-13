@@ -705,14 +705,11 @@
 
         if (data.success) {
           alert('🐾 Notionに保存しました！');
-          if (liff.isInClient()) {
-            liff.closeWindow();
-          } else {
-            resetForm();
-            loadHistory();
-            submitBtn.disabled = false;
-            submitBtn.innerText = '📝 この内容でNotionに登録';
-          }
+          // 画面を閉じずに入力フォームをリセットし、最新履歴を再取得
+          resetForm();
+          loadHistory();
+          submitBtn.disabled = false;
+          submitBtn.innerText = '📝 この内容でNotionに登録';
         } else {
           alert('❌ 保存失敗:\n' + data.error);
           submitBtn.disabled = false;
