@@ -490,11 +490,11 @@
       initLiff();
     });
 
-    // 0g（未入力）〜140g（10g刻み）のプルダウンを生成
+    // 0g〜120g（10g刻み）のプルダウンを生成
     function buildFoodSelects() {
       const selects = ['kyoikuFood', 'deckFood'];
       let optionsHtml = '<option value="0">0g（未入力）</option>';
-      for (let i = 10; i <= 140; i += 10) {
+      for (let i = 10; i <= 120; i += 10) {
         optionsHtml += `<option value="${i}">${i}g</option>`;
       }
       selects.forEach(id => {
@@ -543,7 +543,7 @@
       loading.innerHTML = '⏳ 履歴データを取得中...';
 
       try {
-        const res = await fetch(GAS_API_URL, { redirect: "follow" });
+        const res = await fetch(GAS_API_URL);
         const data = await res.json();
         if (data.success) {
           renderLogs(data.logs);
@@ -669,6 +669,7 @@
       reader.readAsDataURL(file);
     }
 
+    // iOS/WebKitでの通信エラー（Pattern mismatch）を完全排除した送信処理
     async function submitData() {
       const submitBtn = document.getElementById('submitBtn');
       submitBtn.disabled = true;
@@ -697,19 +698,20 @@
       try {
         const res = await fetch(GAS_API_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify(payload),
-          redirect: 'follow'
+          body: JSON.stringify(payload)
         });
         const data = await res.json();
 
         if (data.success) {
           alert('🐾 Notionに保存しました！');
-          // 画面を閉じずに入力フォームをリセットし、最新履歴を再取得
-          resetForm();
-          loadHistory();
-          submitBtn.disabled = false;
-          submitBtn.innerText = '📝 この内容でNotionに登録';
+          if (liff.isInClient()) {
+            liff.closeWindow();
+          } else {
+            resetForm();
+            loadHistory();
+            submitBtn.disabled = false;
+            submitBtn.innerText = '📝 この内容でNotionに登録';
+          }
         } else {
           alert('❌ 保存失敗:\n' + data.error);
           submitBtn.disabled = false;
