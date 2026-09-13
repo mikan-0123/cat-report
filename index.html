@@ -108,7 +108,7 @@
       margin-bottom: 6px;
     }
 
-    .input-number,
+    .select-box,
     textarea {
       width: 100%;
       box-sizing: border-box;
@@ -404,8 +404,8 @@
       </div>
     </div>
     <div class="form-group">
-      <label class="field-label" for="kyoikuFood">🍚 エサの量（g・個数など）</label>
-      <input type="number" id="kyoikuFood" class="input-number" placeholder="例: 100">
+      <label class="field-label" for="kyoikuFood">🍚 エサの量</label>
+      <select id="kyoikuFood" class="select-box"></select>
     </div>
     <div class="form-group">
       <label class="field-label">🐱 教育の子猫（匹数）</label>
@@ -441,8 +441,8 @@
       </div>
     </div>
     <div class="form-group">
-      <label class="field-label" for="deckFood">🍚 エサの量（g・個数など）</label>
-      <input type="number" id="deckFood" class="input-number" placeholder="例: 150">
+      <label class="field-label" for="deckFood">🍚 エサの量</label>
+      <select id="deckFood" class="select-box"></select>
     </div>
     <div class="form-group">
       <label class="field-label">🐈 確認できた猫</label>
@@ -484,10 +484,24 @@
     let currentUserName = '担当者';
 
     window.addEventListener('DOMContentLoaded', () => {
+      buildFoodSelects();
       buildDeckCats();
       loadHistory();
       initLiff();
     });
+
+    // 0g〜120g（10g刻み）のプルダウンを生成
+    function buildFoodSelects() {
+      const selects = ['kyoikuFood', 'deckFood'];
+      let optionsHtml = '<option value="0">0g（未入力）</option>';
+      for (let i = 10; i <= 120; i += 10) {
+        optionsHtml += `<option value="${i}">${i}g</option>`;
+      }
+      selects.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = optionsHtml;
+      });
+    }
 
     async function initLiff() {
       const displayEl = document.getElementById('userNameDisplay');
@@ -565,14 +579,14 @@
             photoHtml += `
               <div class="photo-box">
                 <div class="photo-label">🏫 教育エリア</div>
-                <img class="photo-img" src="${log.kyoikuPhoto}" onclick="openModal('${log.kyoikuPhoto}')" alt="教育の写真">
+                <img class="photo-img" src="${log.kyoikuPhoto}" loading="lazy" onclick="openModal('${log.kyoikuPhoto}')" alt="教育の写真">
               </div>`;
           }
           if (log.deckPhoto) {
             photoHtml += `
               <div class="photo-box">
                 <div class="photo-label">🏡 デッキエリア</div>
-                <img class="photo-img" src="${log.deckPhoto}" onclick="openModal('${log.deckPhoto}')" alt="デッキの写真">
+                <img class="photo-img" src="${log.deckPhoto}" loading="lazy" onclick="openModal('${log.deckPhoto}')" alt="デッキの写真">
               </div>`;
           }
           photoHtml += '</div>';
@@ -672,8 +686,8 @@
         formData: {
           kyoikuPhoto: kyoikuBase64,
           deckPhoto: deckBase64,
-          kyoikuFoodAmount: document.getElementById('kyoikuFood').value,
-          deckFoodAmount: document.getElementById('deckFood').value,
+          kyoikuFoodAmount: Number(document.getElementById('kyoikuFood').value) || 0,
+          deckFoodAmount: Number(document.getElementById('deckFood').value) || 0,
           kittenCount: selectedKitten,
           checked: checkedState,
           noteText: document.getElementById('noteTextInput').value
@@ -681,7 +695,6 @@
       };
 
       try {
-        // GASへのPOST送信（リダイレクト追従 + text/plain指定）
         const res = await fetch(GAS_API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain' },
@@ -713,8 +726,8 @@
     }
 
     function resetForm() {
-      document.getElementById('kyoikuFood').value = '';
-      document.getElementById('deckFood').value = '';
+      document.getElementById('kyoikuFood').value = '0';
+      document.getElementById('deckFood').value = '0';
       document.getElementById('noteTextInput').value = '';
       document.getElementById('previewKyoiku').style.display = 'none';
       document.getElementById('previewDeck').style.display = 'none';
