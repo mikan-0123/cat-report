@@ -668,7 +668,6 @@
       reader.readAsDataURL(file);
     }
 
-    // フォーム送信処理（Notion保存 ＋ LINEチャットへのテキスト＆画像投稿）
     async function submitData() {
       const submitBtn = document.getElementById('submitBtn');
       submitBtn.disabled = true;
@@ -725,7 +724,6 @@
               noteText ? `📝 備考: ${noteText}` : null
             ].filter(Boolean).join('\n');
 
-            // 1. テキストメッセージ
             const messagesToSend = [
               {
                 type: 'text',
@@ -733,7 +731,7 @@
               }
             ];
 
-            // 2. 教育の写真（アップロード成功していれば追加）
+            // 教育エリアの写真を追加
             if (data.kyoikuPhotoUrl) {
               messagesToSend.push({
                 type: 'image',
@@ -742,7 +740,7 @@
               });
             }
 
-            // 3. デッキの写真（アップロード成功していれば追加）
+            // デッキエリアの写真を追加
             if (data.deckPhotoUrl) {
               messagesToSend.push({
                 type: 'image',
@@ -752,13 +750,13 @@
             }
 
             try {
-              // ユーザー本人のメッセージとして一括送信（無料枠消費なし）
               await liff.sendMessages(messagesToSend);
+              alert('🐾 Notionに保存し、チャットに報告と写真を送信しました！');
             } catch (sendErr) {
-              console.error('LINE送信失敗:', sendErr);
+              console.error('LINE送信失敗詳細:', sendErr);
+              alert('⚠️ Notionには保存されましたが、LINEメッセージ送信でエラーが発生しました:\n' + sendErr.message);
             }
 
-            alert('🐾 Notionに保存し、チャットに報告と写真を送信しました！');
             liff.closeWindow();
           } else {
             alert('🐾 Notionに保存しました！');
