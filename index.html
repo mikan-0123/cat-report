@@ -677,21 +677,31 @@
 
       const checkedCats = ['教育の親猫', ...DECK_CATS];
       const checkedState = {};
+      const confirmedCatsList = [];
+
       checkedCats.forEach(cat => {
         const el = document.getElementById(`cat_${cat}`);
-        checkedState[cat] = el ? el.checked : false;
+        const isChecked = el ? el.checked : false;
+        checkedState[cat] = isChecked;
+        if (isChecked) {
+          confirmedCatsList.push(cat);
+        }
       });
+
+      const kyoikuFood = Number(document.getElementById('kyoikuFood').value) || 0;
+      const deckFood = Number(document.getElementById('deckFood').value) || 0;
+      const noteText = document.getElementById('noteTextInput').value.trim();
 
       const payload = {
         userName: currentUserName,
         formData: {
           kyoikuPhoto: kyoikuBase64,
           deckPhoto: deckBase64,
-          kyoikuFoodAmount: Number(document.getElementById('kyoikuFood').value) || 0,
-          deckFoodAmount: Number(document.getElementById('deckFood').value) || 0,
+          kyoikuFoodAmount: kyoikuFood,
+          deckFoodAmount: deckFood,
           kittenCount: selectedKitten,
           checked: checkedState,
-          noteText: document.getElementById('noteTextInput').value
+          noteText: noteText
         }
       };
 
@@ -703,10 +713,35 @@
         const data = await res.json();
 
         if (data.success) {
-          alert('🐾 Notionに保存しました！');
+          // ==================== LINEチャットへの送信処理 ====================
           if (liff.isInClient()) {
+            const catStr = confirmedCatsList.length > 0 ? confirmedCatsList.join('、') : 'なし';
+            const messageText = [
+              `🐾 【餌やり報告】`,
+              `👤 担当: ${currentUserName}`,
+              `--------------------`,
+              `🏫 教育: ${kyoikuFood}g (子猫: ${selectedKitten}匹)`,
+              `🏡 デッキ: ${deckFood}g`,
+              `🐈 確認: ${catStr}`,
+              noteText ? `📝 備考: ${noteText}` : null
+            ].filter(Boolean).join('\n');
+
+            try {
+              // ユーザー本人のメッセージとしてトーク画面に送信（通数制限の消費なし）
+              await liff.sendMessages([
+                {
+                  type: 'text',
+                  text: messageText
+                }
+              ]);
+            } catch (sendErr) {
+              console.error('LINE送信失敗:', sendErr);
+            }
+
+            alert('🐾 Notionに保存し、チャットに報告しました！');
             liff.closeWindow();
           } else {
+            alert('🐾 Notionに保存しました！');
             resetForm();
             loadHistory();
             submitBtn.disabled = false;
