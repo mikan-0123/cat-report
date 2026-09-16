@@ -711,19 +711,18 @@
         const data = await res.json();
 
         if (data.success) {
-          // ==================== LINEチャットへの送信処理 (デバッグ情報付き) ====================
+          // ==================== LINEチャットへの送信処理 (診断強化版) ====================
           if (liff.isInClient()) {
             const catStr = confirmedCatsList.length > 0 ? confirmedCatsList.join('、') : 'なし';
 
-            // デバッグログ用の診断配列
             const debugLogs = [];
-            
+
             // 教育写真の診断
             if (kyoikuBase64) {
               if (data.kyoikuPhotoUrl) {
                 debugLogs.push(`📸 教育写真URL: 取得成功\n${data.kyoikuPhotoUrl}`);
               } else {
-                debugLogs.push(`⚠️ 教育写真: 添付されましたがGAS側でURLが生成されませんでした (null)`);
+                debugLogs.push(`⚠️ 教育写真失敗: GAS返却値 [${data.rawKyoiku || 'null'}] (Base64長: ${kyoikuBase64.length})`);
               }
             } else {
               debugLogs.push(`ℹ️ 教育写真: 未添付`);
@@ -734,7 +733,7 @@
               if (data.deckPhotoUrl) {
                 debugLogs.push(`📸 デッキ写真URL: 取得成功\n${data.deckPhotoUrl}`);
               } else {
-                debugLogs.push(`⚠️ デッキ写真: 添付されましたがGAS側でURLが生成されませんでした (null)`);
+                debugLogs.push(`⚠️ デッキ写真失敗: GAS返却値 [${data.rawDeck || 'null'}] (Base64長: ${deckBase64.length})`);
               }
             } else {
               debugLogs.push(`ℹ️ デッキ写真: 未添付`);
