@@ -542,7 +542,7 @@
       loading.innerHTML = '⏳ 履歴データを取得中...';
 
       try {
-        const res = await fetch(GAS_API_URL);
+        const res = await fetch(`${GAS_API_URL}?t=${Date.now()}`);
         const data = await res.json();
         if (data.success) {
           renderLogs(data.logs);
@@ -668,6 +668,7 @@
       reader.readAsDataURL(file);
     }
 
+    // フォーム送信処理（Notion保存 ＋ 最新履歴から写真URLを逆引きしてチャット送信）
     async function submitData() {
       const submitBtn = document.getElementById('submitBtn');
       submitBtn.disabled = true;
@@ -711,32 +712,34 @@
         const data = await res.json();
 
         if (data.success) {
-          // ==================== LINEチャットへの送信処理 (診断強化版) ====================
+          // ==================== LINEチャットへの送信処理 ====================
           if (liff.isInClient()) {
-            const catStr = confirmedCatsList.length > 0 ? confirmedCatsList.join('、') : 'なし';
+            submitBtn.innerText = 'チャットへ送信中...';
 
-            const debugLogs = [];
-
-            // 教育写真の診断
-            if (kyoikuBase64) {
-              if (data.kyoikuPhotoUrl) {
-                debugLogs.push(`📸 教育写真URL: 取得成功\n${data.kyoikuPhotoUrl}`);
-              } else {
-                debugLogs.push(`⚠️ 教育写真失敗: GAS返却値 [${data.rawKyoiku || 'null'}] (Base64長: ${kyoikuBase64.length})`);
+            // 成功実績のある GET API 経由で直近1件の画像URLを逆引き
+            let kyoikuUrl = null;
+            let deckUrl = null;
+            try {
+              const checkRes = await fetch(`${GAS_API_URL}?t=${Date.now()}`);
+              const checkData = await checkRes.json();
+              if (checkData.success && checkData.logs && checkData.logs.length > 0) {
+                const latestLog = checkData.logs[0];
+                kyoikuUrl = latestLog.kyoikuPhoto || null;
+                deckUrl = latestLog.deckPhoto || null;
               }
-            } else {
-              debugLogs.push(`ℹ️ 教育写真: 未添付`);
+            } catch (fetchErr) {
+              console.warn('履歴逆引き失敗:', fetchErr);
             }
 
-            // デッキ写真の診断
-            if (deckBase64) {
-              if (data.deckPhotoUrl) {
-                debugLogs.push(`📸 デッキ写真URL: 取得成功\n${data.deckPhotoUrl}`);
-              } else {
-                debugLogs.push(`⚠️ デッキ写真失敗: GAS返却値 [${data.rawDeck || 'null'}] (Base64長: ${deckBase64.length})`);
-              }
-            } else {
-              debugLogs.push(`ℹ️ デッキ写真: 未添付`);
+            const catStr = confirmedCatsList.length > 0 ? confirmedCatsList.join('、') : 'なし';
+
+            // 写真リンク行の生成
+            const photoLinks = [];
+            if (kyoikuUrl) {
+              photoLinks.push(`📸 教育の写真:\n${kyoikuUrl}`);
+            }
+            if (deckUrl) {
+              photoLinks.push(`📸 デッキの写真:\n${deckUrl}`);
             }
 
             const messageLines = [
@@ -746,23 +749,26 @@
               `🏫 教育: ${kyoikuFood}g (子猫: ${selectedKitten}匹)`,
               `🏡 デッキ: ${deckFood}g`,
               `🐈 確認: ${catStr}`,
-              noteText ? `📝 備考: ${noteText}` : null,
-              `--------------------`,
-              `🔍 【写真リンク・通信診断】`,
-              debugLogs.join('\n')
+              noteText ? `📝 備考: ${noteText}` : null
             ];
+
+            if (photoLinks.length > 0) {
+              messageLines.push(`--------------------`);
+              messageLines.push(photoLinks.join('\n'));
+            }
 
             const fullMessageText = messageLines.filter(Boolean).join('\n');
 
             try {
+              // ユーザー本人のメッセージとして1通送信（月間枠消費なし）
               await liff.sendMessages([{
                 type: 'text',
                 text: fullMessageText
               }]);
-              alert('🐾 チャットに送信しました！チャット画面の診断結果を確認してください。');
+              alert('🐾 Notionに保存し、チャットに写真付きで報告を送信しました！');
             } catch (sendErr) {
               console.error('LINE送信失敗詳細:', sendErr);
-              alert('⚠️ LINEへのメッセージ送信でエラーが発生しました:\n' + sendErr.message);
+              alert('⚠️ Notionには保存されましたが、LINEメッセージ送信でエラーが発生しました:\n' + sendErr.message);
             }
 
             liff.closeWindow();
