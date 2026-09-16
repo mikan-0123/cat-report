@@ -711,6 +711,9 @@
         });
         const data = await res.json();
 
+        // ★ 診断用アラート（GASから何が返ってきたか画面に直接表示）
+        alert(`【診断】GAS返却データ:\n成功: ${data.success}\n教育URL: ${data.lineKyoikuPhoto}\nデッキURL: ${data.lineDeckPhoto}`);
+
         if (data.success) {
           if (liff.isInClient()) {
             submitBtn.innerText = 'チャットへ送信中...';
@@ -729,7 +732,6 @@
 
             const fullMessageText = messageLines.filter(Boolean).join('\n');
 
-            // 送信メッセージ配列（テキスト）
             const messagesToSend = [
               {
                 type: 'text',
@@ -737,7 +739,7 @@
               }
             ];
 
-            // GAS側（Freeimage.host経由）で生成された直リンク画像を追加
+            // Freeimage.host 経由の直リンク画像を追加
             if (data.lineKyoikuPhoto) {
               messagesToSend.push({
                 type: 'image',
