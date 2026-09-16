@@ -711,17 +711,33 @@
         const data = await res.json();
 
         if (data.success) {
-          // ==================== LINEチャットへの送信処理 ====================
+          // ==================== LINEチャットへの送信処理 (デバッグ情報付き) ====================
           if (liff.isInClient()) {
             const catStr = confirmedCatsList.length > 0 ? confirmedCatsList.join('、') : 'なし';
+
+            // デバッグログ用の診断配列
+            const debugLogs = [];
             
-            // 写真リンク行の生成
-            const photoLinks = [];
-            if (data.kyoikuPhotoUrl) {
-              photoLinks.push(`📸 教育の写真:\n${data.kyoikuPhotoUrl}`);
+            // 教育写真の診断
+            if (kyoikuBase64) {
+              if (data.kyoikuPhotoUrl) {
+                debugLogs.push(`📸 教育写真URL: 取得成功\n${data.kyoikuPhotoUrl}`);
+              } else {
+                debugLogs.push(`⚠️ 教育写真: 添付されましたがGAS側でURLが生成されませんでした (null)`);
+              }
+            } else {
+              debugLogs.push(`ℹ️ 教育写真: 未添付`);
             }
-            if (data.deckPhotoUrl) {
-              photoLinks.push(`📸 デッキの写真:\n${data.deckPhotoUrl}`);
+
+            // デッキ写真の診断
+            if (deckBase64) {
+              if (data.deckPhotoUrl) {
+                debugLogs.push(`📸 デッキ写真URL: 取得成功\n${data.deckPhotoUrl}`);
+              } else {
+                debugLogs.push(`⚠️ デッキ写真: 添付されましたがGAS側でURLが生成されませんでした (null)`);
+              }
+            } else {
+              debugLogs.push(`ℹ️ デッキ写真: 未添付`);
             }
 
             const messageLines = [
@@ -731,26 +747,23 @@
               `🏫 教育: ${kyoikuFood}g (子猫: ${selectedKitten}匹)`,
               `🏡 デッキ: ${deckFood}g`,
               `🐈 確認: ${catStr}`,
-              noteText ? `📝 備考: ${noteText}` : null
+              noteText ? `📝 備考: ${noteText}` : null,
+              `--------------------`,
+              `🔍 【写真リンク・通信診断】`,
+              debugLogs.join('\n')
             ];
-
-            if (photoLinks.length > 0) {
-              messageLines.push(`--------------------`);
-              messageLines.push(photoLinks.join('\n'));
-            }
 
             const fullMessageText = messageLines.filter(Boolean).join('\n');
 
             try {
-              // 写真リンクを含むテキストメッセージを1通送信
               await liff.sendMessages([{
                 type: 'text',
                 text: fullMessageText
               }]);
-              alert('🐾 Notionに保存し、チャットに報告を送信しました！');
+              alert('🐾 チャットに送信しました！チャット画面の診断結果を確認してください。');
             } catch (sendErr) {
               console.error('LINE送信失敗詳細:', sendErr);
-              alert('⚠️ Notionには保存されましたが、LINEメッセージ送信でエラーが発生しました:\n' + sendErr.message);
+              alert('⚠️ LINEへのメッセージ送信でエラーが発生しました:\n' + sendErr.message);
             }
 
             liff.closeWindow();
