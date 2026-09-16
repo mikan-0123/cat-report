@@ -668,7 +668,7 @@
       reader.readAsDataURL(file);
     }
 
-    // フォーム送信処理（Notion保存 ＋ 最新履歴から写真URLを逆引きしてチャット送信）
+    // フォーム送信処理（Notion保存 ＋ LINEへのテキスト＆画像直接送信テスト）
     async function submitData() {
       const submitBtn = document.getElementById('submitBtn');
       submitBtn.disabled = true;
@@ -716,31 +716,7 @@
           if (liff.isInClient()) {
             submitBtn.innerText = 'チャットへ送信中...';
 
-            // 成功実績のある GET API 経由で直近1件の画像URLを逆引き
-            let kyoikuUrl = null;
-            let deckUrl = null;
-            try {
-              const checkRes = await fetch(`${GAS_API_URL}?t=${Date.now()}`);
-              const checkData = await checkRes.json();
-              if (checkData.success && checkData.logs && checkData.logs.length > 0) {
-                const latestLog = checkData.logs[0];
-                kyoikuUrl = latestLog.kyoikuPhoto || null;
-                deckUrl = latestLog.deckPhoto || null;
-              }
-            } catch (fetchErr) {
-              console.warn('履歴逆引き失敗:', fetchErr);
-            }
-
             const catStr = confirmedCatsList.length > 0 ? confirmedCatsList.join('、') : 'なし';
-
-            // 写真リンク行の生成
-            const photoLinks = [];
-            if (kyoikuUrl) {
-              photoLinks.push(`📸 教育の写真:\n${kyoikuUrl}`);
-            }
-            if (deckUrl) {
-              photoLinks.push(`📸 デッキの写真:\n${deckUrl}`);
-            }
 
             const messageLines = [
               `🐾 【餌やり報告】`,
@@ -752,20 +728,26 @@
               noteText ? `📝 備考: ${noteText}` : null
             ];
 
-            if (photoLinks.length > 0) {
-              messageLines.push(`--------------------`);
-              messageLines.push(photoLinks.join('\n'));
-            }
-
             const fullMessageText = messageLines.filter(Boolean).join('\n');
 
-            try {
-              // ユーザー本人のメッセージとして1通送信（月間枠消費なし）
-              await liff.sendMessages([{
+            // 送信メッセージ配列（テキスト ＋ 画像）
+            const messagesToSend = [
+              {
                 type: 'text',
                 text: fullMessageText
-              }]);
-              alert('🐾 Notionに保存し、チャットに写真付きで報告を送信しました！');
+              },
+              // Imgurの画像直接送信テスト
+              {
+                type: 'image',
+                originalContentUrl: 'https://i.imgur.com/2mK0gWb.jpeg',
+                previewImageUrl: 'https://i.imgur.com/2mK0gWb.jpeg'
+              }
+            ];
+
+            try {
+              // ユーザー本人のメッセージとして直接チャットへ送信
+              await liff.sendMessages(messagesToSend);
+              alert('🐾 Notionに保存し、写真付きでチャットに送信しました！');
             } catch (sendErr) {
               console.error('LINE送信失敗詳細:', sendErr);
               alert('⚠️ Notionには保存されましたが、LINEメッセージ送信でエラーが発生しました:\n' + sendErr.message);
