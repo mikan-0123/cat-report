@@ -474,7 +474,8 @@
   </div>
 
   <script>
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwweCqCzya_TnE-gYdyW5AqqGQayB1nCJfTqvfuQ06FV3shEMbvnRMVlj_0RV_lkrY58Q/exec";
+    // ★ 更新された最新のGAS WebアプリURL
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzVRiRILsVmn4c7S2JTpGt-e4_uw3vzR2WC60OlLWVFm_WFT--Iy5UP_M9A90SgcRKuEA/exec";
     const LIFF_ID = "2011245589-M2Y0zVZY";
 
     const DECK_CATS = ['黒蜜', 'はいちゃん', 'ちびとら', 'チーズケーキ', 'でかとら'];
@@ -668,7 +669,7 @@
       reader.readAsDataURL(file);
     }
 
-    // 送信処理（Notion保存 ＋ GASから返ってきた画像直リンクでチャット送信）
+    // 送信処理（Notion保存 ＋ GASから返却された直リンクで画像吹き出し送信）
     async function submitData() {
       const submitBtn = document.getElementById('submitBtn');
       submitBtn.disabled = true;
@@ -711,7 +712,7 @@
         });
         const data = await res.json();
 
-        // ★ 診断用アラート（GASから何が返ってきたか画面に直接表示）
+        // 診断用アラート（GAS返却値の確認）
         alert(`【診断】GAS返却データ:\n成功: ${data.success}\n教育URL: ${data.lineKyoikuPhoto}\nデッキURL: ${data.lineDeckPhoto}`);
 
         if (data.success) {
@@ -739,7 +740,7 @@
               }
             ];
 
-            // Freeimage.host 経由の直リンク画像を追加
+            // GAS（Freeimage.host経由）から取得した直リンク画像をメッセージに追加
             if (data.lineKyoikuPhoto) {
               messagesToSend.push({
                 type: 'image',
