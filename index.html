@@ -490,7 +490,6 @@
       initLiff();
     });
 
-    // 0g〜120g（10g刻み）のプルダウンを生成
     function buildFoodSelects() {
       const selects = ['kyoikuFood', 'deckFood'];
       let optionsHtml = '<option value="0">0g（未入力）</option>';
@@ -669,7 +668,7 @@
       reader.readAsDataURL(file);
     }
 
-    // iOS/WebKitでの通信エラー（Pattern mismatch）を完全排除した送信処理
+    // フォーム送信処理（Notion保存 ＋ LINEチャットへのテキスト＆画像投稿）
     async function submitData() {
       const submitBtn = document.getElementById('submitBtn');
       submitBtn.disabled = true;
@@ -726,19 +725,40 @@
               noteText ? `📝 備考: ${noteText}` : null
             ].filter(Boolean).join('\n');
 
+            // 1. テキストメッセージ
+            const messagesToSend = [
+              {
+                type: 'text',
+                text: messageText
+              }
+            ];
+
+            // 2. 教育の写真（アップロード成功していれば追加）
+            if (data.kyoikuPhotoUrl) {
+              messagesToSend.push({
+                type: 'image',
+                originalContentUrl: data.kyoikuPhotoUrl,
+                previewImageUrl: data.kyoikuPhotoUrl
+              });
+            }
+
+            // 3. デッキの写真（アップロード成功していれば追加）
+            if (data.deckPhotoUrl) {
+              messagesToSend.push({
+                type: 'image',
+                originalContentUrl: data.deckPhotoUrl,
+                previewImageUrl: data.deckPhotoUrl
+              });
+            }
+
             try {
-              // ユーザー本人のメッセージとしてトーク画面に送信（通数制限の消費なし）
-              await liff.sendMessages([
-                {
-                  type: 'text',
-                  text: messageText
-                }
-              ]);
+              // ユーザー本人のメッセージとして一括送信（無料枠消費なし）
+              await liff.sendMessages(messagesToSend);
             } catch (sendErr) {
               console.error('LINE送信失敗:', sendErr);
             }
 
-            alert('🐾 Notionに保存し、チャットに報告しました！');
+            alert('🐾 Notionに保存し、チャットに報告と写真を送信しました！');
             liff.closeWindow();
           } else {
             alert('🐾 Notionに保存しました！');
