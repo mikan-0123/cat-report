@@ -714,7 +714,17 @@
           // ==================== LINEチャットへの送信処理 ====================
           if (liff.isInClient()) {
             const catStr = confirmedCatsList.length > 0 ? confirmedCatsList.join('、') : 'なし';
-            const messageText = [
+            
+            // 写真リンク行の生成
+            const photoLinks = [];
+            if (data.kyoikuPhotoUrl) {
+              photoLinks.push(`📸 教育の写真:\n${data.kyoikuPhotoUrl}`);
+            }
+            if (data.deckPhotoUrl) {
+              photoLinks.push(`📸 デッキの写真:\n${data.deckPhotoUrl}`);
+            }
+
+            const messageLines = [
               `🐾 【餌やり報告】`,
               `👤 担当: ${currentUserName}`,
               `--------------------`,
@@ -722,36 +732,22 @@
               `🏡 デッキ: ${deckFood}g`,
               `🐈 確認: ${catStr}`,
               noteText ? `📝 備考: ${noteText}` : null
-            ].filter(Boolean).join('\n');
-
-            const messagesToSend = [
-              {
-                type: 'text',
-                text: messageText
-              }
             ];
 
-            // 教育エリアの写真を追加
-            if (data.kyoikuPhotoUrl) {
-              messagesToSend.push({
-                type: 'image',
-                originalContentUrl: data.kyoikuPhotoUrl,
-                previewImageUrl: data.kyoikuPhotoUrl
-              });
+            if (photoLinks.length > 0) {
+              messageLines.push(`--------------------`);
+              messageLines.push(photoLinks.join('\n'));
             }
 
-            // デッキエリアの写真を追加
-            if (data.deckPhotoUrl) {
-              messagesToSend.push({
-                type: 'image',
-                originalContentUrl: data.deckPhotoUrl,
-                previewImageUrl: data.deckPhotoUrl
-              });
-            }
+            const fullMessageText = messageLines.filter(Boolean).join('\n');
 
             try {
-              await liff.sendMessages(messagesToSend);
-              alert('🐾 Notionに保存し、チャットに報告と写真を送信しました！');
+              // 写真リンクを含むテキストメッセージを1通送信
+              await liff.sendMessages([{
+                type: 'text',
+                text: fullMessageText
+              }]);
+              alert('🐾 Notionに保存し、チャットに報告を送信しました！');
             } catch (sendErr) {
               console.error('LINE送信失敗詳細:', sendErr);
               alert('⚠️ Notionには保存されましたが、LINEメッセージ送信でエラーが発生しました:\n' + sendErr.message);
