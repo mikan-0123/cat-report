@@ -476,6 +476,9 @@
   <script>
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwweCqCzya_TnE-gYdyW5AqqGQayB1nCJfTqvfuQ06FV3shEMbvnRMVlj_0RV_lkrY58Q/exec";
     const LIFF_ID = "2011245589-M2Y0zVZY";
+    
+    // ==================== Freeimage.host API Key ====================
+    const IMAGE_API_KEY = "6d207e02198a847aa98d0a2a901485a5";
 
     const DECK_CATS = ['黒蜜', 'はいちゃん', 'ちびとら', 'チーズケーキ', 'でかとら'];
     let selectedKitten = 0;
@@ -668,7 +671,32 @@
       reader.readAsDataURL(file);
     }
 
-    // フォーム送信処理（Notion保存 ＋ LINEへのテキスト＆画像直接送信テスト）
+    // Freeimage.host への直接アップロード処理
+    async function uploadToHost(base64Data) {
+      if (!base64Data || !IMAGE_API_KEY) return null;
+      try {
+        const base64Body = base64Data.replace(/^data:image\/\w+;base64,/, '');
+        const formData = new FormData();
+        formData.append('key', IMAGE_API_KEY);
+        formData.append('action', 'upload');
+        formData.append('source', base64Body);
+        formData.append('format', 'json');
+
+        const res = await fetch('https://freeimage.host/api/1/upload', {
+          method: 'POST',
+          body: formData
+        });
+        const resJson = await res.json();
+        if (resJson.status_code === 200 && resJson.image && resJson.image.url) {
+          return resJson.image.url;
+        }
+      } catch (err) {
+        console.error('Image Upload Error:', err);
+      }
+      return null;
+    }
+
+    // フォーム送信処理（Notion保存 ＋ 画像ホスティング ＋ LINEチャットへ画像吹き出し送信）
     async function submitData() {
       const submitBtn = document.getElementById('submitBtn');
       submitBtn.disabled = true;
@@ -705,14 +733,20 @@
       };
 
       try {
-        const res = await fetch(GAS_API_URL, {
-          method: 'POST',
-          body: JSON.stringify(payload)
-        });
-        const data = await res.json();
+        // Notion/Drive保存と、LINE表示用ホスティングへのアップロードを並行実行
+        const uploadKyoikuPromise = uploadToHost(kyoikuBase64);
+        const uploadDeckPromise = uploadToHost(deckBase64);
+
+        const [gasRes, lineKyoikuUrl, lineDeckUrl] = await Promise.all([
+          fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) }),
+          uploadKyoikuPromise,
+          uploadDeckPromise
+        ]);
+
+        const data = await gasRes.json();
 
         if (data.success) {
-          // ==================== LINEチャットへの送信処理 ====================
+          // ==================== LINEチャットへの直接投稿 ====================
           if (liff.isInClient()) {
             submitBtn.innerText = 'チャットへ送信中...';
 
@@ -730,22 +764,34 @@
 
             const fullMessageText = messageLines.filter(Boolean).join('\n');
 
-            // 送信メッセージ配列（テキスト ＋ 画像）
+            // 送信メッセージ配列（テキスト + 画像吹き出し）
             const messagesToSend = [
               {
                 type: 'text',
                 text: fullMessageText
-              },
-              // Imgurの画像直接送信テスト
-              {
-                type: 'image',
-                originalContentUrl: 'https://i.imgur.com/2mK0gWb.jpeg',
-                previewImageUrl: 'https://i.imgur.com/2mK0gWb.jpeg'
               }
             ];
 
+            // 教育写真があれば画像メッセージを追加
+            if (lineKyoikuUrl) {
+              messagesToSend.push({
+                type: 'image',
+                originalContentUrl: lineKyoikuUrl,
+                previewImageUrl: lineKyoikuUrl
+              });
+            }
+
+            // デッキ写真があれば画像メッセージを追加
+            if (lineDeckUrl) {
+              messagesToSend.push({
+                type: 'image',
+                originalContentUrl: lineDeckUrl,
+                previewImageUrl: lineDeckUrl
+              });
+            }
+
             try {
-              // ユーザー本人のメッセージとして直接チャットへ送信
+              // ユーザー本人のメッセージとして直接送信（無料枠消費なし）
               await liff.sendMessages(messagesToSend);
               alert('🐾 Notionに保存し、写真付きでチャットに送信しました！');
             } catch (sendErr) {
