@@ -148,13 +148,37 @@
       display: none;
     }
 
-    .preview-img {
-      max-width: 100%;
-      max-height: 160px;
-      object-fit: cover;
+    .preview-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .preview-thumb-wrap {
+      position: relative;
+      width: 100%;
+      height: 80px;
       border-radius: 6px;
-      display: none;
-      margin-top: 6px;
+      overflow: hidden;
+      background: #eee;
+    }
+
+    .preview-thumb-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .first-badge {
+      position: absolute;
+      bottom: 2px;
+      left: 2px;
+      background: rgba(0, 0, 0, 0.7);
+      color: #fff;
+      font-size: 0.65rem;
+      padding: 2px 4px;
+      border-radius: 4px;
     }
 
     .btn-group {
@@ -396,11 +420,11 @@
   <div class="card">
     <h2>🏫 教育エリア</h2>
     <div class="form-group">
-      <label class="field-label">📷 教育の写真</label>
+      <label class="field-label">📷 教育の写真（複数選択可 / 1枚目がNotionへ保存）</label>
       <div class="file-input-wrapper">
         <label class="file-btn" for="kyoikuPhotoInput">📷 写真を選択 / 撮影</label>
-        <input type="file" id="kyoikuPhotoInput" accept="image/*" onchange="handleImage(this, 'previewKyoiku')">
-        <img id="previewKyoiku" class="preview-img" alt="教育の写真プレビュー">
+        <input type="file" id="kyoikuPhotoInput" accept="image/*" multiple onchange="handleMultipleImages(this, 'kyoiku')">
+        <div id="previewKyoikuContainer" class="preview-container"></div>
       </div>
     </div>
     <div class="form-group">
@@ -433,11 +457,11 @@
   <div class="card">
     <h2>🏡 デッキエリア</h2>
     <div class="form-group">
-      <label class="field-label">📷 デッキの写真</label>
+      <label class="field-label">📷 デッキの写真（複数選択可 / 1枚目がNotionへ保存）</label>
       <div class="file-input-wrapper">
         <label class="file-btn" for="deckPhotoInput">📷 写真を選択 / 撮影</label>
-        <input type="file" id="deckPhotoInput" accept="image/*" onchange="handleImage(this, 'previewDeck')">
-        <img id="previewDeck" class="preview-img" alt="デッキの写真プレビュー">
+        <input type="file" id="deckPhotoInput" accept="image/*" multiple onchange="handleMultipleImages(this, 'deck')">
+        <div id="previewDeckContainer" class="preview-container"></div>
       </div>
     </div>
     <div class="form-group">
@@ -474,14 +498,13 @@
   </div>
 
   <script>
-    // ★ 更新された最新のGAS WebアプリURL
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzsijlmbcrVYGsGws6shugBEet-myqC_DaDFVICNNXozf2V32qGlEg3a3ir3wBefw3w4A/exec";
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyAWSj3C62ApMuseaIp3JHRoDmKn-Y2kZt3aJvflW061bHK8l_4pkX8n6RasjIxcjsb3w/exec";
     const LIFF_ID = "2011245589-M2Y0zVZY";
 
     const DECK_CATS = ['黒蜜', 'はいちゃん', 'ちびとら', 'チーズケーキ', 'でかとら'];
     let selectedKitten = 0;
-    let kyoikuBase64 = null;
-    let deckBase64 = null;
+    let kyoikuBase64Array = [];
+    let deckBase64Array = [];
     let currentUserName = '担当者';
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -627,50 +650,74 @@
       });
     }
 
-    function handleImage(input, previewId) {
-      const file = input.files[0];
-      if (!file) return;
+    // 複数画像のリサイズ・圧縮処理
+    function handleMultipleImages(input, type) {
+      const files = Array.from(input.files);
+      if (!files.length) return;
 
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const maxDim = 1000;
-          let width = img.width;
-          let height = img.height;
+      const previewContainer = document.getElementById(type === 'kyoiku' ? 'previewKyoikuContainer' : 'previewDeckContainer');
+      previewContainer.innerHTML = '';
+      
+      if (type === 'kyoiku') {
+        kyoikuBase64Array = [];
+      } else {
+        deckBase64Array = [];
+      }
 
-          if (width > height && width > maxDim) {
-            height = Math.round((height * maxDim) / width);
-            width = maxDim;
-          } else if (height > maxDim) {
-            width = Math.round((width * maxDim) / height);
-            height = maxDim;
-          }
+      files.forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const maxDim = 1000;
+            let width = img.width;
+            let height = img.height;
 
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
+            if (width > height && width > maxDim) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else if (height > maxDim) {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
 
-          const compressed = canvas.toDataURL('image/jpeg', 0.7);
-          const preview = document.getElementById(previewId);
-          preview.src = compressed;
-          preview.style.display = 'block';
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
 
-          if (previewId === 'previewKyoiku') {
-            kyoikuBase64 = compressed;
-          } else {
-            deckBase64 = compressed;
-          }
+            const compressed = canvas.toDataURL('image/jpeg', 0.7);
+
+            if (type === 'kyoiku') {
+              kyoikuBase64Array.push(compressed);
+            } else {
+              deckBase64Array.push(compressed);
+            }
+
+            const thumbWrap = document.createElement('div');
+            thumbWrap.className = 'preview-thumb-wrap';
+            thumbWrap.innerHTML = `
+              <img src="${compressed}" alt="プレビュー">
+              ${index === 0 ? '<span class="first-badge">Notion保存</span>' : ''}
+            `;
+            previewContainer.appendChild(thumbWrap);
+          };
+          img.src = e.target.result;
         };
-        img.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
+        reader.readAsDataURL(file);
+      });
     }
 
-    // 送信処理（Notion保存 ＋ GASから返却された直リンクで画像吹き出し送信）
+    // 送信処理
     async function submitData() {
+      // LINEの1回あたりの送信可能上限（メッセージ1通 + 写真最大4枚 = 計5通）の検証
+      const totalImages = kyoikuBase64Array.length + deckBase64Array.length;
+      if (totalImages > 4) {
+        alert(`⚠️ LINEの制限上、同時に送信できる写真は合計4枚までです。\n（現在: 教育 ${kyoikuBase64Array.length}枚 + デッキ ${deckBase64Array.length}枚 = 計 ${totalImages}枚）\n写真を選び直してください。`);
+        return;
+      }
+
       const submitBtn = document.getElementById('submitBtn');
       submitBtn.disabled = true;
       submitBtn.innerText = '登録中...（送信中）';
@@ -695,8 +742,8 @@
       const payload = {
         userName: currentUserName,
         formData: {
-          kyoikuPhoto: kyoikuBase64,
-          deckPhoto: deckBase64,
+          kyoikuPhotos: kyoikuBase64Array,
+          deckPhotos: deckBase64Array,
           kyoikuFoodAmount: kyoikuFood,
           deckFoodAmount: deckFood,
           kittenCount: selectedKitten,
@@ -711,9 +758,6 @@
           body: JSON.stringify(payload)
         });
         const data = await res.json();
-
-        // 診断用アラート（GAS返却値の確認）
-        alert(`【診断】GAS返却データ:\n成功: ${data.success}\n教育URL: ${data.lineKyoikuPhoto}\nデッキURL: ${data.lineDeckPhoto}`);
 
         if (data.success) {
           if (liff.isInClient()) {
@@ -740,20 +784,25 @@
               }
             ];
 
-            // GAS（Freeimage.host経由）から取得した直リンク画像をメッセージに追加
-            if (data.lineKyoikuPhoto) {
-              messagesToSend.push({
-                type: 'image',
-                originalContentUrl: data.lineKyoikuPhoto,
-                previewImageUrl: data.lineKyoikuPhoto
+            // 教育エリアの写真（Freeimage直リンク）を追加
+            if (data.lineKyoikuPhotos && Array.isArray(data.lineKyoikuPhotos)) {
+              data.lineKyoikuPhotos.forEach(url => {
+                messagesToSend.push({
+                  type: 'image',
+                  originalContentUrl: url,
+                  previewImageUrl: url
+                });
               });
             }
 
-            if (data.lineDeckPhoto) {
-              messagesToSend.push({
-                type: 'image',
-                originalContentUrl: data.lineDeckPhoto,
-                previewImageUrl: data.lineDeckPhoto
+            // デッキエリアの写真（Freeimage直リンク）を追加
+            if (data.lineDeckPhotos && Array.isArray(data.lineDeckPhotos)) {
+              data.lineDeckPhotos.forEach(url => {
+                messagesToSend.push({
+                  type: 'image',
+                  originalContentUrl: url,
+                  previewImageUrl: url
+                });
               });
             }
 
@@ -789,12 +838,12 @@
       document.getElementById('kyoikuFood').value = '0';
       document.getElementById('deckFood').value = '0';
       document.getElementById('noteTextInput').value = '';
-      document.getElementById('previewKyoiku').style.display = 'none';
-      document.getElementById('previewDeck').style.display = 'none';
+      document.getElementById('previewKyoikuContainer').innerHTML = '';
+      document.getElementById('previewDeckContainer').innerHTML = '';
       document.getElementById('kyoikuPhotoInput').value = '';
       document.getElementById('deckPhotoInput').value = '';
-      kyoikuBase64 = null;
-      deckBase64 = null;
+      kyoikuBase64Array = [];
+      deckBase64Array = [];
       selectKitten(0);
       ['教育の親猫', ...DECK_CATS].forEach(cat => {
         const el = document.getElementById(`cat_${cat}`);
