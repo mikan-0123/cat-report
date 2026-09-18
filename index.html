@@ -403,9 +403,9 @@
   <div class="card">
     <h2>🏫 教育エリア</h2>
     <div class="form-group">
-      <label class="field-label">📷 教育の写真（最大4枚・自動結合）</label>
+      <label class="field-label">📷 教育の写真（最大6枚・自動結合）</label>
       <div class="file-input-wrapper">
-        <label class="file-btn" for="kyoikuPhotoInput">📷 写真を選択 / 撮影（複数可）</label>
+        <label class="file-btn" for="kyoikuPhotoInput">📷 写真を選択 / 撮影（最大6枚）</label>
         <input type="file" id="kyoikuPhotoInput" accept="image/*" multiple onchange="handleProcessImages(this, 'kyoiku')">
         <img id="previewKyoiku" class="preview-img" alt="教育の結合写真プレビュー">
         <span id="hintKyoiku" class="preview-hint" style="display:none;"></span>
@@ -441,9 +441,9 @@
   <div class="card">
     <h2>🏡 デッキエリア</h2>
     <div class="form-group">
-      <label class="field-label">📷 デッキの写真（最大4枚・自動結合）</label>
+      <label class="field-label">📷 デッキの写真（最大6枚・自動結合）</label>
       <div class="file-input-wrapper">
-        <label class="file-btn" for="deckPhotoInput">📷 写真を選択 / 撮影（複数可）</label>
+        <label class="file-btn" for="deckPhotoInput">📷 写真を選択 / 撮影（最大6枚）</label>
         <input type="file" id="deckPhotoInput" accept="image/*" multiple onchange="handleProcessImages(this, 'deck')">
         <img id="previewDeck" class="preview-img" alt="デッキの結合写真プレビュー">
         <span id="hintDeck" class="preview-hint" style="display:none;"></span>
@@ -636,9 +636,9 @@
       });
     }
 
-    // ==================== 画像結合・リサイズ処理 ====================
+    // ==================== 画像結合・リサイズ処理 (最大6枚) ====================
     async function handleProcessImages(input, areaType) {
-      const files = Array.from(input.files).slice(0, 4); // 最大4枚
+      const files = Array.from(input.files).slice(0, 6); // 最大6枚
       if (!files.length) return;
 
       const previewEl = document.getElementById(areaType === 'kyoiku' ? 'previewKyoiku' : 'previewDeck');
@@ -679,14 +679,13 @@
       }
     }
 
-    // スマホの縦横比（4:3 または 3:4）を考慮したグリッド結合
+    // 1〜6枚対応のCanvasコラージュ生成
     function createCollage(images) {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       const count = images.length;
       const targetSize = 1080; // 基準解像度
 
-      // アスペクト比を保ったトリミング描画関数（object-fit: cover 相当）
       function drawCover(img, x, y, w, h) {
         const imgRatio = img.width / img.height;
         const targetRatio = w / h;
@@ -708,7 +707,7 @@
       }
 
       if (count === 1) {
-        // 1枚のみ：長辺最大1080pxにリサイズ
+        // 1枚：長辺最大1080pxにリサイズ
         let w = images[0].width;
         let h = images[0].height;
         if (w > h && w > targetSize) {
@@ -723,7 +722,7 @@
         ctx.drawImage(images[0], 0, 0, w, h);
 
       } else if (count === 2) {
-        // 2枚：左右に分割配置（正方形に近い 1080x810 比率）
+        // 2枚：左右分割
         canvas.width = targetSize;
         canvas.height = 810;
         ctx.fillStyle = '#ffffff';
@@ -734,7 +733,7 @@
         drawCover(images[1], halfW + 2, 0, halfW - 2, 810);
 
       } else if (count === 3) {
-        // 3枚：左に大きく1枚、右に上下2枚
+        // 3枚：左に1枚、右に上下2枚
         canvas.width = targetSize;
         canvas.height = targetSize;
         ctx.fillStyle = '#ffffff';
@@ -742,13 +741,12 @@
 
         const halfW = targetSize / 2;
         const halfH = targetSize / 2;
-
         drawCover(images[0], 0, 0, halfW - 2, targetSize);
         drawCover(images[1], halfW + 2, 0, halfW - 2, halfH - 2);
         drawCover(images[2], halfW + 2, halfH + 2, halfW - 2, halfH - 2);
 
-      } else {
-        // 4枚：2x2 の均等正方形グリッド
+      } else if (count === 4) {
+        // 4枚：2×2 グリッド
         canvas.width = targetSize;
         canvas.height = targetSize;
         ctx.fillStyle = '#ffffff';
@@ -756,11 +754,50 @@
 
         const halfW = targetSize / 2;
         const halfH = targetSize / 2;
-
         drawCover(images[0], 0, 0, halfW - 2, halfH - 2);
         drawCover(images[1], halfW + 2, 0, halfW - 2, halfH - 2);
         drawCover(images[2], 0, halfH + 2, halfW - 2, halfH - 2);
         drawCover(images[3], halfW + 2, halfH + 2, halfW - 2, halfH - 2);
+
+      } else if (count === 5) {
+        // 5枚：上段2枚（均等）、下段3枚（均等）
+        canvas.width = targetSize;
+        canvas.height = targetSize;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const rowH = targetSize / 2;
+        const topW = targetSize / 2;
+        const btmW = targetSize / 3;
+
+        // 上段2枚
+        drawCover(images[0], 0, 0, topW - 2, rowH - 2);
+        drawCover(images[1], topW + 2, 0, topW - 2, rowH - 2);
+
+        // 下段3枚
+        drawCover(images[2], 0, rowH + 2, btmW - 2, rowH - 2);
+        drawCover(images[3], btmW + 2, rowH + 2, btmW - 2, rowH - 2);
+        drawCover(images[4], (btmW * 2) + 2, rowH + 2, btmW - 2, rowH - 2);
+
+      } else {
+        // 6枚：3列×2行 グリッド
+        canvas.width = targetSize;
+        canvas.height = Math.round(targetSize * (2 / 3)); // 1080 x 720比率
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const colW = targetSize / 3;
+        const rowH = canvas.height / 2;
+
+        for (let i = 0; i < 6; i++) {
+          const col = i % 3;
+          const row = Math.floor(i / 3);
+          const x = col * colW + (col > 0 ? 2 : 0);
+          const y = row * rowH + (row > 0 ? 2 : 0);
+          const w = colW - 2;
+          const h = rowH - 2;
+          drawCover(images[i], x, y, w, h);
+        }
       }
 
       return canvas.toDataURL('image/jpeg', 0.75);
