@@ -525,7 +525,6 @@
     window.addEventListener('DOMContentLoaded', async () => {
       buildFoodSelects();
       buildDeckCats();
-      // LIFF初期化完了後にユーザー名が確定してから履歴を描画
       await initLiff();
       loadHistory();
     });
@@ -673,6 +672,11 @@
 
     // ==================== 削除処理 ====================
     async function confirmDelete(pageId) {
+      if (!pageId || pageId === 'undefined') {
+        alert('⚠️ ページ情報の取得に失敗しました。画面を再読み込みしてください。');
+        return;
+      }
+
       const ok = confirm('本当にこの報告を消去しますか？\n（Notionのデータベースからも消去されます）');
       if (!ok) return;
 
@@ -694,7 +698,7 @@
         const data = await res.json();
         if (data.success) {
           alert('🗑️ 報告を消去しました。');
-          loadHistory(); // 一覧を再取得
+          loadHistory();
         } else {
           alert('❌ 消去に失敗しました: ' + (data.error || '不明なエラー'));
           if (cardEl) {
