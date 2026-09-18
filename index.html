@@ -13,6 +13,7 @@
       --bg: #f4f6f8;
       --card-bg: #ffffff;
       --text: #333333;
+      --danger: #e53935;
     }
 
     body {
@@ -294,6 +295,18 @@
       margin-bottom: 12px;
     }
 
+    .log-header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .log-header-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
     .log-date {
       font-weight: bold;
       font-size: 0.95rem;
@@ -307,6 +320,22 @@
       padding: 3px 8px;
       border-radius: 12px;
       font-weight: 500;
+    }
+
+    .delete-btn {
+      background: #ffebee;
+      color: var(--danger);
+      border: 1px solid #ffcdd2;
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .delete-btn:active {
+      background: #ffcdd2;
     }
 
     .photo-grid {
@@ -483,7 +512,6 @@
   </div>
 
   <script>
-    // 指定された最新のGAS WebアプリURL
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzYJAX7c085RlxujwygezVikp5NtH0cD5DG73L2j8APQKty4z2fyz5LywxlHsSWY_sEog/exec";
     const LIFF_ID = "2011245589-M2Y0zVZY";
 
@@ -492,12 +520,14 @@
     let kyoikuBase64 = null;
     let deckBase64 = null;
     let currentUserName = '担当者';
+    let currentLogsCache = [];
 
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', async () => {
       buildFoodSelects();
       buildDeckCats();
+      // LIFF初期化完了後にユーザー名が確定してから履歴を描画
+      await initLiff();
       loadHistory();
-      initLiff();
     });
 
     function buildFoodSelects() {
@@ -555,7 +585,8 @@
         const res = await fetch(`${GAS_API_URL}?t=${Date.now()}`);
         const data = await res.json();
         if (data.success) {
-          renderLogs(data.logs);
+          currentLogsCache = data.logs || [];
+          renderLogs(currentLogsCache);
         } else {
           loading.innerHTML = '❌ 履歴読み込み失敗: ' + (data.error || '不明なエラー');
         }
@@ -601,13 +632,22 @@
           photoHtml += '</div>';
         }
 
-        const noteHtml = log.note ? `<div class="note-box">💬 <strong>備考:</strong> ${log.note}</div>` : '';
+        const noteHtml = log.note ? `<div class="note-box">💬 <strong>備考:</strong> ${escapeHtml(log.note)}</div>` : '';
+
+        // 報告者が一致する場合のみ削除ボタンを表示
+        const isOwner = currentUserName !== '担当者' && log.user === currentUserName;
+        const deleteBtnHtml = isOwner ? `<button class="delete-btn" onclick="confirmDelete('${log.pageId}')">🗑️ 削除</button>` : '';
 
         return `
-          <div class="log-card">
+          <div class="log-card" id="card-${log.pageId}">
             <div class="log-header">
-              <span class="log-date">${log.date}</span>
-              <span class="log-user">👤 ${log.user}</span>
+              <div class="log-header-left">
+                <span class="log-date">${log.date}</span>
+                <span class="log-user">👤 ${escapeHtml(log.user)}</span>
+              </div>
+              <div class="log-header-right">
+                ${deleteBtnHtml}
+              </div>
             </div>
             ${photoHtml}
             <div class="cats-badge-container">
@@ -618,6 +658,57 @@
           </div>
         `;
       }).join('');
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>"']/g, m => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      }[m]));
+    }
+
+    // ==================== 削除処理 ====================
+    async function confirmDelete(pageId) {
+      const ok = confirm('本当にこの報告を消去しますか？\n（Notionのデータベースからも消去されます）');
+      if (!ok) return;
+
+      const cardEl = document.getElementById(`card-${pageId}`);
+      if (cardEl) {
+        cardEl.style.opacity = '0.5';
+        cardEl.style.pointerEvents = 'none';
+      }
+
+      try {
+        const res = await fetch(GAS_API_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'delete',
+            pageId: pageId
+          })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          alert('🗑️ 報告を消去しました。');
+          loadHistory(); // 一覧を再取得
+        } else {
+          alert('❌ 消去に失敗しました: ' + (data.error || '不明なエラー'));
+          if (cardEl) {
+            cardEl.style.opacity = '1';
+            cardEl.style.pointerEvents = 'auto';
+          }
+        }
+      } catch (err) {
+        alert('❌ 通信エラー: ' + err.message);
+        if (cardEl) {
+          cardEl.style.opacity = '1';
+          cardEl.style.pointerEvents = 'auto';
+        }
+      }
     }
 
     function openModal(src) {
@@ -638,7 +729,7 @@
 
     // ==================== 画像結合・リサイズ処理 (最大6枚) ====================
     async function handleProcessImages(input, areaType) {
-      const files = Array.from(input.files).slice(0, 6); // 最大6枚
+      const files = Array.from(input.files).slice(0, 6);
       if (!files.length) return;
 
       const previewEl = document.getElementById(areaType === 'kyoiku' ? 'previewKyoiku' : 'previewDeck');
@@ -679,12 +770,11 @@
       }
     }
 
-    // 1〜6枚対応のCanvasコラージュ生成
     function createCollage(images) {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       const count = images.length;
-      const targetSize = 1080; // 基準解像度
+      const targetSize = 1080;
 
       function drawCover(img, x, y, w, h) {
         const imgRatio = img.width / img.height;
@@ -707,7 +797,6 @@
       }
 
       if (count === 1) {
-        // 1枚：長辺最大1080pxにリサイズ
         let w = images[0].width;
         let h = images[0].height;
         if (w > h && w > targetSize) {
@@ -722,7 +811,6 @@
         ctx.drawImage(images[0], 0, 0, w, h);
 
       } else if (count === 2) {
-        // 2枚：左右分割
         canvas.width = targetSize;
         canvas.height = 810;
         ctx.fillStyle = '#ffffff';
@@ -733,7 +821,6 @@
         drawCover(images[1], halfW + 2, 0, halfW - 2, 810);
 
       } else if (count === 3) {
-        // 3枚：左に1枚、右に上下2枚
         canvas.width = targetSize;
         canvas.height = targetSize;
         ctx.fillStyle = '#ffffff';
@@ -746,7 +833,6 @@
         drawCover(images[2], halfW + 2, halfH + 2, halfW - 2, halfH - 2);
 
       } else if (count === 4) {
-        // 4枚：2×2 グリッド
         canvas.width = targetSize;
         canvas.height = targetSize;
         ctx.fillStyle = '#ffffff';
@@ -760,7 +846,6 @@
         drawCover(images[3], halfW + 2, halfH + 2, halfW - 2, halfH - 2);
 
       } else if (count === 5) {
-        // 5枚：上段2枚（均等）、下段3枚（均等）
         canvas.width = targetSize;
         canvas.height = targetSize;
         ctx.fillStyle = '#ffffff';
@@ -770,19 +855,16 @@
         const topW = targetSize / 2;
         const btmW = targetSize / 3;
 
-        // 上段2枚
         drawCover(images[0], 0, 0, topW - 2, rowH - 2);
         drawCover(images[1], topW + 2, 0, topW - 2, rowH - 2);
 
-        // 下段3枚
         drawCover(images[2], 0, rowH + 2, btmW - 2, rowH - 2);
         drawCover(images[3], btmW + 2, rowH + 2, btmW - 2, rowH - 2);
         drawCover(images[4], (btmW * 2) + 2, rowH + 2, btmW - 2, rowH - 2);
 
       } else {
-        // 6枚：3列×2行 グリッド
         canvas.width = targetSize;
-        canvas.height = Math.round(targetSize * (2 / 3)); // 1080 x 720比率
+        canvas.height = Math.round(targetSize * (2 / 3));
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -871,7 +953,6 @@
               }
             ];
 
-            // 結合された教育エリアの画像（直リンク）
             if (data.lineKyoikuPhoto) {
               messagesToSend.push({
                 type: 'image',
@@ -880,7 +961,6 @@
               });
             }
 
-            // 結合されたデッキエリアの画像（直リンク）
             if (data.lineDeckPhoto) {
               messagesToSend.push({
                 type: 'image',
