@@ -294,18 +294,6 @@
       margin-bottom: 12px;
     }
 
-    .log-header-left {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .log-header-right {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
     .log-date {
       font-weight: bold;
       font-size: 0.95rem;
@@ -319,21 +307,6 @@
       padding: 3px 8px;
       border-radius: 12px;
       font-weight: 500;
-    }
-
-    .delete-btn {
-      background: #ffebee;
-      color: #c62828;
-      border: 1px solid #ffcdd2;
-      padding: 3px 8px;
-      border-radius: 6px;
-      font-size: 0.75rem;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .delete-btn:hover {
-      background: #ef9a9a;
     }
 
     .photo-grid {
@@ -511,57 +484,57 @@
 
   <script>
     // 指定された最新のGAS WebアプリURL
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycby64_Z-2VVMswk2Sraasfc7_JmL52A-WW9dn4YgnWaWNRubahBXTWMfClvQ6QW1TNzL7w/exec";[cite: 1]
-    const LIFF_ID = "2011245589-M2Y0zVZY";[cite: 1]
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzYJAX7c085RlxujwygezVikp5NtH0cD5DG73L2j8APQKty4z2fyz5LywxlHsSWY_sEog/exec";
+    const LIFF_ID = "2011245589-M2Y0zVZY";
 
-    const DECK_CATS = ['黒蜜', 'はいちゃん', 'ちびとら', 'チーズケーキ', 'でかとら'];[cite: 1]
-    let selectedKitten = 0;[cite: 1]
-    let kyoikuBase64 = null;[cite: 1]
-    let deckBase64 = null;[cite: 1]
-    let currentUserName = '担当者';[cite: 1]
+    const DECK_CATS = ['黒蜜', 'はいちゃん', 'ちびとら', 'チーズケーキ', 'でかとら'];
+    let selectedKitten = 0;
+    let kyoikuBase64 = null;
+    let deckBase64 = null;
+    let currentUserName = '担当者';
 
-    window.addEventListener('DOMContentLoaded', async () => {
+    window.addEventListener('DOMContentLoaded', () => {
       buildFoodSelects();
       buildDeckCats();
-      await initLiff(); // 担当者名を先に取得してから履歴を生成
       loadHistory();
+      initLiff();
     });
 
     function buildFoodSelects() {
-      const selects = ['kyoikuFood', 'deckFood'];[cite: 1]
-      let optionsHtml = '<option value="0">0g（未入力）</option>';[cite: 1]
-      for (let i = 10; i <= 120; i += 10) {[cite: 1]
-        optionsHtml += `<option value="${i}">${i}g</option>`;[cite: 1]
+      const selects = ['kyoikuFood', 'deckFood'];
+      let optionsHtml = '<option value="0">0g（未入力）</option>';
+      for (let i = 10; i <= 120; i += 10) {
+        optionsHtml += `<option value="${i}">${i}g</option>`;
       }
-      selects.forEach(id => {[cite: 1]
-        const el = document.getElementById(id);[cite: 1]
-        if (el) el.innerHTML = optionsHtml;[cite: 1]
+      selects.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = optionsHtml;
       });
     }
 
     async function initLiff() {
-      const displayEl = document.getElementById('userNameDisplay');[cite: 1]
+      const displayEl = document.getElementById('userNameDisplay');
       try {
-        await liff.init({ liffId: LIFF_ID });[cite: 1]
+        await liff.init({ liffId: LIFF_ID });
 
-        if (!liff.isLoggedIn()) {[cite: 1]
-          liff.login();[cite: 1]
-          return;[cite: 1]
+        if (!liff.isLoggedIn()) {
+          liff.login();
+          return;
         }
 
-        const profile = await liff.getProfile();[cite: 1]
-        if (profile && profile.displayName) {[cite: 1]
-          currentUserName = profile.displayName;[cite: 1]
-          displayEl.innerText = currentUserName;[cite: 1]
+        const profile = await liff.getProfile();
+        if (profile && profile.displayName) {
+          currentUserName = profile.displayName;
+          displayEl.innerText = currentUserName;
         }
       } catch (err) {
-        console.error('LIFF Error:', err);[cite: 1]
-        displayEl.innerText = '担当者';[cite: 1]
+        console.error('LIFF Error:', err);
+        displayEl.innerText = '担当者';
       }
     }
 
     function buildDeckCats() {
-      const container = document.getElementById('deckCatsList');[cite: 1]
+      const container = document.getElementById('deckCatsList');
       container.innerHTML = DECK_CATS.map(cat => `
         <div class="cat-item">
           <span class="cat-name">${cat}</span>
@@ -570,89 +543,71 @@
             <span class="slider"></span>
           </label>
         </div>
-      `).join('');[cite: 1]
+      `).join('');
     }
 
     async function loadHistory() {
-      const loading = document.getElementById('loading');[cite: 1]
-      loading.style.display = 'block';[cite: 1]
-      loading.innerHTML = '⏳ 履歴データを取得中...';[cite: 1]
+      const loading = document.getElementById('loading');
+      loading.style.display = 'block';
+      loading.innerHTML = '⏳ 履歴データを取得中...';
 
       try {
-        const res = await fetch(`${GAS_API_URL}?t=${Date.now()}`);[cite: 1]
-        const data = await res.json();[cite: 1]
-        if (data.success) {[cite: 1]
-          renderLogs(data.logs);[cite: 1]
+        const res = await fetch(`${GAS_API_URL}?t=${Date.now()}`);
+        const data = await res.json();
+        if (data.success) {
+          renderLogs(data.logs);
         } else {
-          loading.innerHTML = '❌ 履歴読み込み失敗: ' + (data.error || '不明なエラー');[cite: 1]
+          loading.innerHTML = '❌ 履歴読み込み失敗: ' + (data.error || '不明なエラー');
         }
       } catch (err) {
-        loading.innerHTML = '❌ 通信エラー: ' + err.message;[cite: 1]
+        loading.innerHTML = '❌ 通信エラー: ' + err.message;
       }
     }
 
     function renderLogs(logs) {
-      const container = document.getElementById('logContainer');[cite: 1]
-      const loading = document.getElementById('loading');[cite: 1]
-      loading.style.display = 'none';[cite: 1]
-      container.innerHTML = '';[cite: 1]
+      const container = document.getElementById('logContainer');
+      const loading = document.getElementById('loading');
+      loading.style.display = 'none';
+      container.innerHTML = '';
 
-      if (!logs || logs.length === 0) {[cite: 1]
-        container.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;">履歴がまだありません</div>';[cite: 1]
-        return;[cite: 1]
+      if (!logs || logs.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;">履歴がまだありません</div>';
+        return;
       }
 
-      const nowTime = Date.now();
-      const twoDaysMs = 2 * 24 * 60 * 60 * 1000; // 48時間
-
       container.innerHTML = logs.map(log => {
-        let catBadges = (log.cats || []).map(c => `<span class="cat-badge">🐱 ${c}</span>`).join('');[cite: 1]
-        if (log.kittenCount > 0) {[cite: 1]
-          catBadges += `<span class="cat-badge" style="background:#e3f2fd; color:#1565c0; border-color:#bbdefb;">🐾 子猫: ${log.kittenCount}匹</span>`;[cite: 1]
+        let catBadges = (log.cats || []).map(c => `<span class="cat-badge">🐱 ${c}</span>`).join('');
+        if (log.kittenCount > 0) {
+          catBadges += `<span class="cat-badge" style="background:#e3f2fd; color:#1565c0; border-color:#bbdefb;">🐾 子猫: ${log.kittenCount}匹</span>`;
         }
 
-        let photoHtml = '';[cite: 1]
-        if (log.kyoikuPhoto || log.deckPhoto) {[cite: 1]
-          photoHtml = '<div class="photo-grid">';[cite: 1]
-          if (log.kyoikuPhoto) {[cite: 1]
+        let photoHtml = '';
+        if (log.kyoikuPhoto || log.deckPhoto) {
+          photoHtml = '<div class="photo-grid">';
+          if (log.kyoikuPhoto) {
             photoHtml += `
               <div class="photo-box">
                 <div class="photo-label">🏫 教育エリア</div>
                 <img class="photo-img" src="${log.kyoikuPhoto}" loading="lazy" onclick="openModal('${log.kyoikuPhoto}')" alt="教育の写真">
-              </div>`;[cite: 1]
+              </div>`;
           }
-          if (log.deckPhoto) {[cite: 1]
+          if (log.deckPhoto) {
             photoHtml += `
               <div class="photo-box">
                 <div class="photo-label">🏡 デッキエリア</div>
                 <img class="photo-img" src="${log.deckPhoto}" loading="lazy" onclick="openModal('${log.deckPhoto}')" alt="デッキの写真">
-              </div>`;[cite: 1]
+              </div>`;
           }
-          photoHtml += '</div>';[cite: 1]
+          photoHtml += '</div>';
         }
 
-        const noteHtml = log.note ? `<div class="note-box">💬 <strong>備考:</strong> ${log.note}</div>` : '';[cite: 1]
-
-        // 削除条件チェック: 本人 かつ 2日以内
-        const logTime = log.rawDate ? new Date(log.rawDate).getTime() : 0;
-        const isWithinTwoDays = (nowTime - logTime) <= twoDaysMs;
-        const isMyLog = currentUserName !== '担当者' && log.user === currentUserName;
-        const canDelete = isMyLog && isWithinTwoDays && log.pageId;
-
-        const deleteButtonHtml = canDelete
-          ? `<button class="delete-btn" onclick="confirmDeleteLog('${log.pageId}')">🗑️ 削除</button>`
-          : '';
+        const noteHtml = log.note ? `<div class="note-box">💬 <strong>備考:</strong> ${log.note}</div>` : '';
 
         return `
-          <div class="log-card" id="card-${log.pageId}">
+          <div class="log-card">
             <div class="log-header">
-              <div class="log-header-left">
-                <span class="log-date">${log.date}</span>
-                <span class="log-user">👤 ${log.user}</span>
-              </div>
-              <div class="log-header-right">
-                ${deleteButtonHtml}
-              </div>
+              <span class="log-date">${log.date}</span>
+              <span class="log-user">👤 ${log.user}</span>
             </div>
             ${photoHtml}
             <div class="cats-badge-container">
@@ -662,185 +617,150 @@
             ${noteHtml}
           </div>
         `;
-      }).join('');[cite: 1]
-    }
-
-    // ==================== 削除実行処理 ====================
-    async function confirmDeleteLog(pageId) {
-      if (!confirm('⚠️ この報告を本当に削除しますか？\n（Notionからも削除されます）')) {
-        return;
-      }
-
-      const card = document.getElementById(`card-${pageId}`);
-      if (card) {
-        card.style.opacity = '0.4';
-        card.style.pointerEvents = 'none';
-      }
-
-      try {
-        const res = await fetch(GAS_API_URL, {
-          method: 'POST',
-          body: JSON.stringify({
-            action: 'deleteLog',
-            pageId: pageId
-          })
-        });
-
-        const data = await res.json();
-        if (data.success) {
-          alert('🗑️ 報告を削除しました。');
-          loadHistory();
-        } else {
-          alert('❌ 削除に失敗しました: ' + (data.error || '不明なエラー'));
-          if (card) {
-            card.style.opacity = '1';
-            card.style.pointerEvents = 'auto';
-          }
-        }
-      } catch (err) {
-        alert('❌ 通信エラー: ' + err.message);
-        if (card) {
-          card.style.opacity = '1';
-          card.style.pointerEvents = 'auto';
-        }
-      }
+      }).join('');
     }
 
     function openModal(src) {
-      document.getElementById('modalImg').src = src;[cite: 1]
-      document.getElementById('imageModal').style.display = 'flex';[cite: 1]
+      document.getElementById('modalImg').src = src;
+      document.getElementById('imageModal').style.display = 'flex';
     }
 
     function closeModal() {
-      document.getElementById('imageModal').style.display = 'none';[cite: 1]
+      document.getElementById('imageModal').style.display = 'none';
     }
 
     function selectKitten(num) {
-      selectedKitten = num;[cite: 1]
-      document.querySelectorAll('.btn-num').forEach((btn, idx) => {[cite: 1]
-        btn.classList.toggle('active', idx === num);[cite: 1]
+      selectedKitten = num;
+      document.querySelectorAll('.btn-num').forEach((btn, idx) => {
+        btn.classList.toggle('active', idx === num);
       });
     }
 
     // ==================== 画像結合・リサイズ処理 (最大6枚) ====================
     async function handleProcessImages(input, areaType) {
-      const files = Array.from(input.files).slice(0, 6);
-      if (!files.length) return;[cite: 1]
+      const files = Array.from(input.files).slice(0, 6); // 最大6枚
+      if (!files.length) return;
 
-      const previewEl = document.getElementById(areaType === 'kyoiku' ? 'previewKyoiku' : 'previewDeck');[cite: 1]
-      const hintEl = document.getElementById(areaType === 'kyoiku' ? 'hintKyoiku' : 'hintDeck');[cite: 1]
+      const previewEl = document.getElementById(areaType === 'kyoiku' ? 'previewKyoiku' : 'previewDeck');
+      const hintEl = document.getElementById(areaType === 'kyoiku' ? 'hintKyoiku' : 'hintDeck');
 
-      hintEl.style.display = 'block';[cite: 1]
-      hintEl.innerText = `⏳ 写真（${files.length}枚）を結合・最適化中...`;[cite: 1]
+      hintEl.style.display = 'block';
+      hintEl.innerText = `⏳ 写真（${files.length}枚）を結合・最適化中...`;
 
       try {
-        const loadedImages = await Promise.all(files.map(file => {[cite: 1]
-          return new Promise((resolve, reject) => {[cite: 1]
-            const reader = new FileReader();[cite: 1]
-            reader.onload = (e) => {[cite: 1]
-              const img = new Image();[cite: 1]
-              img.onload = () => resolve(img);[cite: 1]
-              img.onerror = reject;[cite: 1]
-              img.src = e.target.result;[cite: 1]
+        const loadedImages = await Promise.all(files.map(file => {
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const img = new Image();
+              img.onload = () => resolve(img);
+              img.onerror = reject;
+              img.src = e.target.result;
             };
-            reader.onerror = reject;[cite: 1]
-            reader.readAsDataURL(file);[cite: 1]
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
           });
         }));
 
         const combinedBase64 = createCollage(loadedImages);
 
-        if (areaType === 'kyoiku') {[cite: 1]
-          kyoikuBase64 = combinedBase64;[cite: 1]
+        if (areaType === 'kyoiku') {
+          kyoikuBase64 = combinedBase64;
         } else {
-          deckBase64 = combinedBase64;[cite: 1]
+          deckBase64 = combinedBase64;
         }
 
-        previewEl.src = combinedBase64;[cite: 1]
-        previewEl.style.display = 'block';[cite: 1]
-        hintEl.innerText = `✅ ${files.length}枚の写真を1枚にレイアウトしました`;[cite: 1]
+        previewEl.src = combinedBase64;
+        previewEl.style.display = 'block';
+        hintEl.innerText = `✅ ${files.length}枚の写真を1枚にレイアウトしました`;
       } catch (err) {
-        console.error('画像結合エラー:', err);[cite: 1]
-        hintEl.innerText = '❌ 画像の処理に失敗しました';[cite: 1]
+        console.error('画像結合エラー:', err);
+        hintEl.innerText = '❌ 画像の処理に失敗しました';
       }
     }
 
+    // 1〜6枚対応のCanvasコラージュ生成
     function createCollage(images) {
-      const canvas = document.createElement('canvas');[cite: 1]
-      const ctx = canvas.getContext('2d');[cite: 1]
-      const count = images.length;[cite: 1]
-      const targetSize = 1080;[cite: 1]
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const count = images.length;
+      const targetSize = 1080; // 基準解像度
 
       function drawCover(img, x, y, w, h) {
-        const imgRatio = img.width / img.height;[cite: 1]
-        const targetRatio = w / h;[cite: 1]
-        let sx, sy, sw, sh;[cite: 1]
+        const imgRatio = img.width / img.height;
+        const targetRatio = w / h;
+        let sx, sy, sw, sh;
 
-        if (imgRatio > targetRatio) {[cite: 1]
-          sh = img.height;[cite: 1]
-          sw = sh * targetRatio;[cite: 1]
-          sy = 0;[cite: 1]
-          sx = (img.width - sw) / 2;[cite: 1]
+        if (imgRatio > targetRatio) {
+          sh = img.height;
+          sw = sh * targetRatio;
+          sy = 0;
+          sx = (img.width - sw) / 2;
         } else {
-          sw = img.width;[cite: 1]
-          sh = sw / targetRatio;[cite: 1]
-          sx = 0;[cite: 1]
-          sy = (img.height - sh) / 2;[cite: 1]
+          sw = img.width;
+          sh = sw / targetRatio;
+          sx = 0;
+          sy = (img.height - sh) / 2;
         }
 
-        ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);[cite: 1]
+        ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
       }
 
-      if (count === 1) {[cite: 1]
-        let w = images[0].width;[cite: 1]
-        let h = images[0].height;[cite: 1]
-        if (w > h && w > targetSize) {[cite: 1]
-          h = Math.round((h * targetSize) / w);[cite: 1]
-          w = targetSize;[cite: 1]
-        } else if (h > targetSize) {[cite: 1]
-          w = Math.round((w * targetSize) / h);[cite: 1]
-          h = targetSize;[cite: 1]
+      if (count === 1) {
+        // 1枚：長辺最大1080pxにリサイズ
+        let w = images[0].width;
+        let h = images[0].height;
+        if (w > h && w > targetSize) {
+          h = Math.round((h * targetSize) / w);
+          w = targetSize;
+        } else if (h > targetSize) {
+          w = Math.round((w * targetSize) / h);
+          h = targetSize;
         }
-        canvas.width = w;[cite: 1]
-        canvas.height = h;[cite: 1]
-        ctx.drawImage(images[0], 0, 0, w, h);[cite: 1]
+        canvas.width = w;
+        canvas.height = h;
+        ctx.drawImage(images[0], 0, 0, w, h);
 
-      } else if (count === 2) {[cite: 1]
-        canvas.width = targetSize;[cite: 1]
-        canvas.height = 810;[cite: 1]
-        ctx.fillStyle = '#ffffff';[cite: 1]
-        ctx.fillRect(0, 0, canvas.width, canvas.height);[cite: 1]
+      } else if (count === 2) {
+        // 2枚：左右分割
+        canvas.width = targetSize;
+        canvas.height = 810;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        const halfW = targetSize / 2;[cite: 1]
-        drawCover(images[0], 0, 0, halfW - 2, 810);[cite: 1]
-        drawCover(images[1], halfW + 2, 0, halfW - 2, 810);[cite: 1]
+        const halfW = targetSize / 2;
+        drawCover(images[0], 0, 0, halfW - 2, 810);
+        drawCover(images[1], halfW + 2, 0, halfW - 2, 810);
 
-      } else if (count === 3) {[cite: 1]
-        canvas.width = targetSize;[cite: 1]
-        canvas.height = targetSize;[cite: 1]
-        ctx.fillStyle = '#ffffff';[cite: 1]
-        ctx.fillRect(0, 0, canvas.width, canvas.height);[cite: 1]
+      } else if (count === 3) {
+        // 3枚：左に1枚、右に上下2枚
+        canvas.width = targetSize;
+        canvas.height = targetSize;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        const halfW = targetSize / 2;[cite: 1]
-        const halfH = targetSize / 2;[cite: 1]
-        drawCover(images[0], 0, 0, halfW - 2, targetSize);[cite: 1]
-        drawCover(images[1], halfW + 2, 0, halfW - 2, halfH - 2);[cite: 1]
-        drawCover(images[2], halfW + 2, halfH + 2, halfW - 2, halfH - 2);[cite: 1]
+        const halfW = targetSize / 2;
+        const halfH = targetSize / 2;
+        drawCover(images[0], 0, 0, halfW - 2, targetSize);
+        drawCover(images[1], halfW + 2, 0, halfW - 2, halfH - 2);
+        drawCover(images[2], halfW + 2, halfH + 2, halfW - 2, halfH - 2);
 
-      } else if (count === 4) {[cite: 1]
-        canvas.width = targetSize;[cite: 1]
-        canvas.height = targetSize;[cite: 1]
-        ctx.fillStyle = '#ffffff';[cite: 1]
-        ctx.fillRect(0, 0, canvas.width, canvas.height);[cite: 1]
+      } else if (count === 4) {
+        // 4枚：2×2 グリッド
+        canvas.width = targetSize;
+        canvas.height = targetSize;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        const halfW = targetSize / 2;[cite: 1]
-        const halfH = targetSize / 2;[cite: 1]
-        drawCover(images[0], 0, 0, halfW - 2, halfH - 2);[cite: 1]
-        drawCover(images[1], halfW + 2, 0, halfW - 2, halfH - 2);[cite: 1]
-        drawCover(images[2], 0, halfH + 2, halfW - 2, halfH - 2);[cite: 1]
-        drawCover(images[3], halfW + 2, halfH + 2, halfW - 2, halfH - 2);[cite: 1]
+        const halfW = targetSize / 2;
+        const halfH = targetSize / 2;
+        drawCover(images[0], 0, 0, halfW - 2, halfH - 2);
+        drawCover(images[1], halfW + 2, 0, halfW - 2, halfH - 2);
+        drawCover(images[2], 0, halfH + 2, halfW - 2, halfH - 2);
+        drawCover(images[3], halfW + 2, halfH + 2, halfW - 2, halfH - 2);
 
       } else if (count === 5) {
+        // 5枚：上段2枚（均等）、下段3枚（均等）
         canvas.width = targetSize;
         canvas.height = targetSize;
         ctx.fillStyle = '#ffffff';
@@ -850,15 +770,19 @@
         const topW = targetSize / 2;
         const btmW = targetSize / 3;
 
+        // 上段2枚
         drawCover(images[0], 0, 0, topW - 2, rowH - 2);
         drawCover(images[1], topW + 2, 0, topW - 2, rowH - 2);
+
+        // 下段3枚
         drawCover(images[2], 0, rowH + 2, btmW - 2, rowH - 2);
         drawCover(images[3], btmW + 2, rowH + 2, btmW - 2, rowH - 2);
         drawCover(images[4], (btmW * 2) + 2, rowH + 2, btmW - 2, rowH - 2);
 
       } else {
+        // 6枚：3列×2行 グリッド
         canvas.width = targetSize;
-        canvas.height = Math.round(targetSize * (2 / 3));
+        canvas.height = Math.round(targetSize * (2 / 3)); // 1080 x 720比率
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -876,137 +800,139 @@
         }
       }
 
-      return canvas.toDataURL('image/jpeg', 0.75);[cite: 1]
+      return canvas.toDataURL('image/jpeg', 0.75);
     }
 
     // ==================== 送信処理 ====================
     async function submitData() {
-      const submitBtn = document.getElementById('submitBtn');[cite: 1]
-      submitBtn.disabled = true;[cite: 1]
-      submitBtn.innerText = '登録中...（送信中）';[cite: 1]
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+      submitBtn.innerText = '登録中...（送信中）';
 
-      const checkedCats = ['教育の親猫', ...DECK_CATS];[cite: 1]
-      const checkedState = {};[cite: 1]
-      const confirmedCatsList = [];[cite: 1]
+      const checkedCats = ['教育の親猫', ...DECK_CATS];
+      const checkedState = {};
+      const confirmedCatsList = [];
 
-      checkedCats.forEach(cat => {[cite: 1]
-        const el = document.getElementById(`cat_${cat}`);[cite: 1]
-        const isChecked = el ? el.checked : false;[cite: 1]
-        checkedState[cat] = isChecked;[cite: 1]
-        if (isChecked) {[cite: 1]
-          confirmedCatsList.push(cat);[cite: 1]
+      checkedCats.forEach(cat => {
+        const el = document.getElementById(`cat_${cat}`);
+        const isChecked = el ? el.checked : false;
+        checkedState[cat] = isChecked;
+        if (isChecked) {
+          confirmedCatsList.push(cat);
         }
       });
 
-      const kyoikuFood = Number(document.getElementById('kyoikuFood').value) || 0;[cite: 1]
-      const deckFood = Number(document.getElementById('deckFood').value) || 0;[cite: 1]
-      const noteText = document.getElementById('noteTextInput').value.trim();[cite: 1]
+      const kyoikuFood = Number(document.getElementById('kyoikuFood').value) || 0;
+      const deckFood = Number(document.getElementById('deckFood').value) || 0;
+      const noteText = document.getElementById('noteTextInput').value.trim();
 
-      const payload = {[cite: 1]
-        userName: currentUserName,[cite: 1]
-        formData: {[cite: 1]
-          kyoikuPhoto: kyoikuBase64,[cite: 1]
-          deckPhoto: deckBase64,[cite: 1]
-          kyoikuFoodAmount: kyoikuFood,[cite: 1]
-          deckFoodAmount: deckFood,[cite: 1]
-          kittenCount: selectedKitten,[cite: 1]
-          checked: checkedState,[cite: 1]
-          noteText: noteText[cite: 1]
+      const payload = {
+        userName: currentUserName,
+        formData: {
+          kyoikuPhoto: kyoikuBase64,
+          deckPhoto: deckBase64,
+          kyoikuFoodAmount: kyoikuFood,
+          deckFoodAmount: deckFood,
+          kittenCount: selectedKitten,
+          checked: checkedState,
+          noteText: noteText
         }
       };
 
       try {
-        const res = await fetch(GAS_API_URL, {[cite: 1]
-          method: 'POST',[cite: 1]
-          body: JSON.stringify(payload)[cite: 1]
+        const res = await fetch(GAS_API_URL, {
+          method: 'POST',
+          body: JSON.stringify(payload)
         });
-        const data = await res.json();[cite: 1]
+        const data = await res.json();
 
-        if (data.success) {[cite: 1]
-          if (liff.isInClient()) {[cite: 1]
-            submitBtn.innerText = 'チャットへ送信中...';[cite: 1]
+        if (data.success) {
+          if (liff.isInClient()) {
+            submitBtn.innerText = 'チャットへ送信中...';
 
-            const catStr = confirmedCatsList.length > 0 ? confirmedCatsList.join('、') : 'なし';[cite: 1]
+            const catStr = confirmedCatsList.length > 0 ? confirmedCatsList.join('、') : 'なし';
 
-            const messageLines = [[cite: 1]
-              `🐾 【餌やり報告】`,[cite: 1]
-              `👤 担当: ${currentUserName}`,[cite: 1]
-              `--------------------`,[cite: 1]
-              `🏫 教育: ${kyoikuFood}g (子猫: ${selectedKitten}匹)`,[cite: 1]
-              `🏡 デッキ: ${deckFood}g`,[cite: 1]
-              `🐈 確認: ${catStr}`,[cite: 1]
-              noteText ? `📝 備考: ${noteText}` : null[cite: 1]
+            const messageLines = [
+              `🐾 【餌やり報告】`,
+              `👤 担当: ${currentUserName}`,
+              `--------------------`,
+              `🏫 教育: ${kyoikuFood}g (子猫: ${selectedKitten}匹)`,
+              `🏡 デッキ: ${deckFood}g`,
+              `🐈 確認: ${catStr}`,
+              noteText ? `📝 備考: ${noteText}` : null
             ];
 
-            const fullMessageText = messageLines.filter(Boolean).join('\n');[cite: 1]
+            const fullMessageText = messageLines.filter(Boolean).join('\n');
 
-            const messagesToSend = [[cite: 1]
+            const messagesToSend = [
               {
-                type: 'text',[cite: 1]
-                text: fullMessageText[cite: 1]
+                type: 'text',
+                text: fullMessageText
               }
             ];
 
-            if (data.lineKyoikuPhoto) {[cite: 1]
-              messagesToSend.push({[cite: 1]
-                type: 'image',[cite: 1]
-                originalContentUrl: data.lineKyoikuPhoto,[cite: 1]
-                previewImageUrl: data.lineKyoikuPhoto[cite: 1]
+            // 結合された教育エリアの画像（直リンク）
+            if (data.lineKyoikuPhoto) {
+              messagesToSend.push({
+                type: 'image',
+                originalContentUrl: data.lineKyoikuPhoto,
+                previewImageUrl: data.lineKyoikuPhoto
               });
             }
 
-            if (data.lineDeckPhoto) {[cite: 1]
-              messagesToSend.push({[cite: 1]
-                type: 'image',[cite: 1]
-                originalContentUrl: data.lineDeckPhoto,[cite: 1]
-                previewImageUrl: data.lineDeckPhoto[cite: 1]
+            // 結合されたデッキエリアの画像（直リンク）
+            if (data.lineDeckPhoto) {
+              messagesToSend.push({
+                type: 'image',
+                originalContentUrl: data.lineDeckPhoto,
+                previewImageUrl: data.lineDeckPhoto
               });
             }
 
             try {
-              await liff.sendMessages(messagesToSend);[cite: 1]
-              alert('🐾 報告と写真をチャットに送信しました！');[cite: 1]
+              await liff.sendMessages(messagesToSend);
+              alert('🐾 報告と写真をチャットに送信しました！');
             } catch (sendErr) {
-              console.error('LINE送信失敗詳細:', sendErr);[cite: 1]
-              alert('⚠️ メッセージ送信でエラーが発生しました:\n' + sendErr.message);[cite: 1]
+              console.error('LINE送信失敗詳細:', sendErr);
+              alert('⚠️ メッセージ送信でエラーが発生しました:\n' + sendErr.message);
             }
 
-            liff.closeWindow();[cite: 1]
+            liff.closeWindow();
           } else {
-            alert('🐾 Notionに保存しました！');[cite: 1]
-            resetForm();[cite: 1]
-            loadHistory();[cite: 1]
-            submitBtn.disabled = false;[cite: 1]
-            submitBtn.innerText = '📝 この内容でNotionに登録';[cite: 1]
+            alert('🐾 Notionに保存しました！');
+            resetForm();
+            loadHistory();
+            submitBtn.disabled = false;
+            submitBtn.innerText = '📝 この内容でNotionに登録';
           }
         } else {
-          alert('❌ 保存失敗:\n' + data.error);[cite: 1]
-          submitBtn.disabled = false;[cite: 1]
-          submitBtn.innerText = '📝 この内容でNotionに登録';[cite: 1]
+          alert('❌ 保存失敗:\n' + data.error);
+          submitBtn.disabled = false;
+          submitBtn.innerText = '📝 この内容でNotionに登録';
         }
       } catch (err) {
-        alert('❌ 通信エラー: ' + err.message);[cite: 1]
-        submitBtn.disabled = false;[cite: 1]
-        submitBtn.innerText = '📝 この内容でNotionに登録';[cite: 1]
+        alert('❌ 通信エラー: ' + err.message);
+        submitBtn.disabled = false;
+        submitBtn.innerText = '📝 この内容でNotionに登録';
       }
     }
 
     function resetForm() {
-      document.getElementById('kyoikuFood').value = '0';[cite: 1]
-      document.getElementById('deckFood').value = '0';[cite: 1]
-      document.getElementById('noteTextInput').value = '';[cite: 1]
-      document.getElementById('previewKyoiku').style.display = 'none';[cite: 1]
-      document.getElementById('previewDeck').style.display = 'none';[cite: 1]
-      document.getElementById('hintKyoiku').style.display = 'none';[cite: 1]
-      document.getElementById('hintDeck').style.display = 'none';[cite: 1]
-      document.getElementById('kyoikuPhotoInput').value = '';[cite: 1]
-      document.getElementById('deckPhotoInput').value = '';[cite: 1]
-      kyoikuBase64 = null;[cite: 1]
-      deckBase64 = null;[cite: 1]
-      selectKitten(0);[cite: 1]
-      ['教育の親猫', ...DECK_CATS].forEach(cat => {[cite: 1]
-        const el = document.getElementById(`cat_${cat}`);[cite: 1]
-        if (el) el.checked = false;[cite: 1]
+      document.getElementById('kyoikuFood').value = '0';
+      document.getElementById('deckFood').value = '0';
+      document.getElementById('noteTextInput').value = '';
+      document.getElementById('previewKyoiku').style.display = 'none';
+      document.getElementById('previewDeck').style.display = 'none';
+      document.getElementById('hintKyoiku').style.display = 'none';
+      document.getElementById('hintDeck').style.display = 'none';
+      document.getElementById('kyoikuPhotoInput').value = '';
+      document.getElementById('deckPhotoInput').value = '';
+      kyoikuBase64 = null;
+      deckBase64 = null;
+      selectKitten(0);
+      ['教育の親猫', ...DECK_CATS].forEach(cat => {
+        const el = document.getElementById(`cat_${cat}`);
+        if (el) el.checked = false;
       });
     }
   </script>
