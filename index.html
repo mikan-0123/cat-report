@@ -606,11 +606,11 @@
       loadHistory();
     });
 
-    // 編集モーダル用のセレクトボックスも一緒に生成
+    // 編集モーダル用のセレクトボックスも一緒に生成（300gまで拡張）
     function buildFoodSelects() {
       const selects = ['kyoikuFood', 'deckFood', 'editKyoikuFood', 'editDeckFood'];
       let optionsHtml = '<option value="0">0g（未入力）</option>';
-      for (let i = 10; i <= 120; i += 10) {
+      for (let i = 10; i <= 300; i += 10) {
         optionsHtml += `<option value="${i}">${i}g</option>`;
       }
       selects.forEach(id => {
