@@ -338,6 +338,22 @@
       background: #ffcdd2;
     }
 
+    /* 編集ボタンのスタイル追加 */
+    .edit-btn {
+      background: #e3f2fd;
+      color: #1976d2;
+      border: 1px solid #bbdefb;
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .edit-btn:active {
+      background: #bbdefb;
+    }
+
     .photo-grid {
       display: flex;
       gap: 10px;
@@ -416,6 +432,24 @@
       max-width: 90%;
       max-height: 85%;
       border-radius: 8px;
+    }
+
+    /* 編集モーダルのスタイル追加 */
+    .edit-modal-content {
+      background: var(--card-bg);
+      width: 90%;
+      max-width: 400px;
+      max-height: 85vh;
+      overflow-y: auto;
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .edit-modal-header {
+      font-size: 1.1rem;
+      font-weight: bold;
+      margin-bottom: 16px;
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 8px;
     }
   </style>
 </head>
@@ -511,6 +545,49 @@
     <img id="modalImg" src="" alt="拡大写真">
   </div>
 
+  <!-- 編集モーダル（追加） -->
+  <div id="editModal" class="modal">
+    <div class="edit-modal-content">
+      <div class="edit-modal-header">✏️ 報告の編集</div>
+      
+      <div class="form-group">
+        <label class="field-label">教育 エサの量</label>
+        <select id="editKyoikuFood" class="select-box"></select>
+      </div>
+      
+      <div class="form-group">
+        <label class="field-label">教育 子猫（匹数）</label>
+        <div class="btn-group" id="editKittenGroup">
+          <button type="button" class="btn-num" onclick="selectEditKitten(0)">0匹</button>
+          <button type="button" class="btn-num" onclick="selectEditKitten(1)">1匹</button>
+          <button type="button" class="btn-num" onclick="selectEditKitten(2)">2匹</button>
+          <button type="button" class="btn-num" onclick="selectEditKitten(3)">3匹</button>
+          <button type="button" class="btn-num" onclick="selectEditKitten(4)">4匹</button>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label class="field-label">デッキ エサの量</label>
+        <select id="editDeckFood" class="select-box"></select>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">🐈 確認できた猫</label>
+        <div id="editCatsList"></div>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">📝 備考</label>
+        <textarea id="editNote" placeholder="特記事項"></textarea>
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button class="submit-btn" style="background-color: #757575;" onclick="closeEditModal()">キャンセル</button>
+        <button class="submit-btn" id="editSubmitBtn" onclick="submitEdit()">💾 保存</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzYJAX7c085RlxujwygezVikp5NtH0cD5DG73L2j8APQKty4z2fyz5LywxlHsSWY_sEog/exec";
     const LIFF_ID = "2011245589-M2Y0zVZY";
@@ -529,8 +606,9 @@
       loadHistory();
     });
 
+    // 編集モーダル用のセレクトボックスも一緒に生成
     function buildFoodSelects() {
-      const selects = ['kyoikuFood', 'deckFood'];
+      const selects = ['kyoikuFood', 'deckFood', 'editKyoikuFood', 'editDeckFood'];
       let optionsHtml = '<option value="0">0g（未入力）</option>';
       for (let i = 10; i <= 120; i += 10) {
         optionsHtml += `<option value="${i}">${i}g</option>`;
@@ -562,17 +640,26 @@
       }
     }
 
+    // 編集モーダル用の猫リストも生成
     function buildDeckCats() {
       const container = document.getElementById('deckCatsList');
-      container.innerHTML = DECK_CATS.map(cat => `
+      const editContainer = document.getElementById('editCatsList'); // 編集用
+      
+      const catHtml = (idPrefix, catName) => `
         <div class="cat-item">
-          <span class="cat-name">${cat}</span>
+          <span class="cat-name">${catName}</span>
           <label class="switch">
-            <input type="checkbox" id="cat_${cat}">
+            <input type="checkbox" id="${idPrefix}_${catName}">
             <span class="slider"></span>
           </label>
         </div>
-      `).join('');
+      `;
+
+      container.innerHTML = DECK_CATS.map(cat => catHtml('cat', cat)).join('');
+      
+      // 編集用は「教育の親猫」も含める
+      const allCats = ['教育の親猫', ...DECK_CATS];
+      if(editContainer) editContainer.innerHTML = allCats.map(cat => catHtml('edit_cat', cat)).join('');
     }
 
     async function loadHistory() {
@@ -633,9 +720,12 @@
 
         const noteHtml = log.note ? `<div class="note-box">💬 <strong>備考:</strong> ${escapeHtml(log.note)}</div>` : '';
 
-        // 報告者が一致する場合のみ削除ボタンを表示
+        // 報告者が一致する場合のみ「編集」と「削除」ボタンを表示
         const isOwner = currentUserName !== '担当者' && log.user === currentUserName;
-        const deleteBtnHtml = isOwner ? `<button class="delete-btn" onclick="confirmDelete('${log.pageId}')">🗑️ 削除</button>` : '';
+        const actionBtnsHtml = isOwner ? `
+          <button class="edit-btn" onclick="openEditModal('${log.pageId}')">✏️ 編集</button>
+          <button class="delete-btn" onclick="confirmDelete('${log.pageId}')">🗑️ 削除</button>
+        ` : '';
 
         return `
           <div class="log-card" id="card-${log.pageId}">
@@ -645,7 +735,7 @@
                 <span class="log-user">👤 ${escapeHtml(log.user)}</span>
               </div>
               <div class="log-header-right">
-                ${deleteBtnHtml}
+                ${actionBtnsHtml}
               </div>
             </div>
             ${photoHtml}
@@ -726,7 +816,7 @@
 
     function selectKitten(num) {
       selectedKitten = num;
-      document.querySelectorAll('.btn-num').forEach((btn, idx) => {
+      document.querySelectorAll('#kittenGroup .btn-num').forEach((btn, idx) => {
         btn.classList.toggle('active', idx === num);
       });
     }
@@ -1018,6 +1108,91 @@
         const el = document.getElementById(`cat_${cat}`);
         if (el) el.checked = false;
       });
+    }
+
+    // ==================== 編集処理 ====================
+    let currentEditPageId = null;
+    let editSelectedKitten = 0;
+
+    function openEditModal(pageId) {
+      const log = currentLogsCache.find(l => l.pageId === pageId);
+      if (!log) return;
+      currentEditPageId = pageId;
+
+      // 値のセット
+      document.getElementById('editKyoikuFood').value = log.kyoikuFood || 0;
+      document.getElementById('editDeckFood').value = log.deckFood || 0;
+      document.getElementById('editNote').value = log.note || '';
+      
+      selectEditKitten(log.kittenCount || 0);
+
+      // 猫のチェック状態
+      const allCats = ['教育の親猫', ...DECK_CATS];
+      allCats.forEach(cat => {
+        const el = document.getElementById(`edit_cat_${cat}`);
+        if (el) el.checked = (log.cats || []).includes(cat);
+      });
+
+      document.getElementById('editModal').style.display = 'flex';
+    }
+
+    function closeEditModal() {
+      document.getElementById('editModal').style.display = 'none';
+      currentEditPageId = null;
+    }
+
+    function selectEditKitten(num) {
+      editSelectedKitten = num;
+      document.querySelectorAll('#editKittenGroup .btn-num').forEach((btn, idx) => {
+        btn.classList.toggle('active', idx === num);
+      });
+    }
+
+    async function submitEdit() {
+      if (!currentEditPageId) return;
+      const submitBtn = document.getElementById('editSubmitBtn');
+      submitBtn.disabled = true;
+      submitBtn.innerText = '更新中...';
+
+      const checkedState = {};
+      const allCats = ['教育の親猫', ...DECK_CATS];
+      allCats.forEach(cat => {
+        const el = document.getElementById(`edit_cat_${cat}`);
+        checkedState[cat] = el ? el.checked : false;
+      });
+
+      const formData = {
+        kyoikuFoodAmount: Number(document.getElementById('editKyoikuFood').value) || 0,
+        deckFoodAmount: Number(document.getElementById('editDeckFood').value) || 0,
+        kittenCount: editSelectedKitten,
+        checked: checkedState,
+        noteText: document.getElementById('editNote').value.trim()
+      };
+
+      try {
+        const res = await fetch(GAS_API_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'edit',
+            pageId: currentEditPageId,
+            formData: formData
+          })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          alert('✏️ 編集を保存しました。');
+          closeEditModal();
+          loadHistory(); // 履歴を再読み込みして表示を更新
+        } else {
+          alert('❌ 編集に失敗しました: ' + (data.error || '不明なエラー'));
+        }
+      } catch (err) {
+        alert('❌ 通信エラー: ' + err.message);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = '💾 保存';
+      }
     }
   </script>
 </body>
